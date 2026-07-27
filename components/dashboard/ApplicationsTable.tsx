@@ -78,6 +78,8 @@ export default function ApplicationsTable({
   const [scoringId, setScoringId] = useState<string | null>(null);
   const [scoringError, setScoringError] = useState<{ id: string, msg: string } | null>(null);
 
+  const [isBulkScoring, setIsBulkScoring] = useState(false);
+
   const handleForceScore = async (applicationId: string) => {
     setScoringId(applicationId);
     setScoringError(null);
@@ -85,12 +87,38 @@ export default function ApplicationsTable({
       const res = await forceAnalyzeCv(applicationId);
       if (!res.success) {
         setScoringError({ id: applicationId, msg: res.error || 'Bilinmeyen hata' });
+        setScoringId(null);
+      } else {
+        router.refresh();
+        setTimeout(() => setScoringId(null), 1500); // 1.5s bekle ki router.refresh veriyi çeksin
       }
     } catch (err: any) {
       setScoringError({ id: applicationId, msg: err.message || 'Beklenmeyen bir hata oluştu' });
-    } finally {
       setScoringId(null);
     }
+  };
+
+  const handleBulkScore = async () => {
+    const unscored = applications.filter(app => !getAnalysisObject(app));
+    if (unscored.length === 0) return;
+    
+    setIsBulkScoring(true);
+    for (const app of unscored) {
+      setScoringId(app.id); // Her biri için sırayla yükleniyor animasyonu göster
+      try {
+        const res = await forceAnalyzeCv(app.id);
+        if (!res.success) {
+          setScoringError({ id: app.id, msg: res.error || 'Hata' });
+        }
+      } catch (err: any) {
+        setScoringError({ id: app.id, msg: err.message });
+      }
+    }
+    router.refresh();
+    setTimeout(() => {
+      setScoringId(null);
+      setIsBulkScoring(false);
+    }, 1500);
   };
 
   useEffect(() => {
@@ -221,9 +249,26 @@ export default function ApplicationsTable({
           })}
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-400 shrink-0">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="font-semibold text-slate-300">Realtime & AI Puanlama Aktif</span>
+        <div className="flex items-center gap-3 shrink-0">
+          {applications.filter(app => !getAnalysisObject(app)).length > 0 && (
+            <button
+              onClick={handleBulkScore}
+              disabled={isBulkScoring}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all disabled:opacity-50"
+            >
+              {isBulkScoring ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              <span>Tümünü Puanlat ({applications.filter(app => !getAnalysisObject(app)).length})</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 text-xs text-slate-400 hidden sm:flex">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span className="font-semibold text-slate-300">Realtime Aktif</span>
+          </div>
         </div>
       </div>
 
