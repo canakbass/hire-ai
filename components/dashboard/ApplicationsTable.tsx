@@ -25,17 +25,11 @@ import {
 interface AnalysisItem {
   id: string;
   application_id: string;
-  match_score: number;
-  extracted: {
-    name?: string;
-    skills?: string[];
-    experience_years?: number;
-    education_level?: string;
-    languages?: string[];
-  } | null;
-  strengths: string[] | null;
-  gaps: string[] | null;
-  verdict: string;
+  match_score: number | null;
+  extracted: any;
+  strengths: any;
+  gaps: any;
+  verdict: string | null;
   model: string | null;
   created_at: string;
 }
