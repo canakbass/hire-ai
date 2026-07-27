@@ -71,6 +71,7 @@ export default async function DashboardOverviewPage() {
       icon: Briefcase,
       color: 'from-indigo-500 to-blue-500',
       bgGlow: 'rgba(99, 102, 241, 0.15)',
+      href: '/dashboard/jobs',
     },
     {
       title: 'Havuzdaki Aday CV’leri',
@@ -79,6 +80,7 @@ export default async function DashboardOverviewPage() {
       icon: Users,
       color: 'from-cyan-500 to-teal-500',
       bgGlow: 'rgba(6, 182, 212, 0.15)',
+      href: '/dashboard/applications',
     },
     {
       title: 'AI Potansiyel Aday',
@@ -87,6 +89,7 @@ export default async function DashboardOverviewPage() {
       icon: Sparkles,
       color: 'from-purple-500 to-pink-500',
       bgGlow: 'rgba(168, 85, 247, 0.15)',
+      href: '/dashboard/applications',
     },
     {
       title: 'Kısa Liste (Shortlist)',
@@ -95,6 +98,7 @@ export default async function DashboardOverviewPage() {
       icon: Award,
       color: 'from-amber-500 to-orange-500',
       bgGlow: 'rgba(245, 158, 11, 0.15)',
+      href: '/dashboard/applications',
     },
   ];
 
@@ -149,15 +153,17 @@ export default async function DashboardOverviewPage() {
         {stats.map((item, idx) => {
           const Icon = item.icon;
           return (
-            <div
+            <Link
               key={idx}
-              className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden"
+              href={item.href}
+              className="glass-panel glass-panel-hover rounded-2xl p-5 relative overflow-hidden transition-all hover:scale-105 hover:cursor-pointer"
               style={{ boxShadow: `0 0 30px ${item.bgGlow}` }}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${item.color} flex items-center justify-center text-white shadow-md`}>
                   <Icon className="w-5 h-5" />
                 </div>
+                <ArrowUpRight className="w-4 h-4 text-white/30" />
               </div>
               <h3 className="text-3xl font-bold text-white tracking-tight">
                 {item.value}
@@ -168,7 +174,7 @@ export default async function DashboardOverviewPage() {
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {item.description}
               </p>
-            </div>
+            </Link>
           );
         })}
       </div>

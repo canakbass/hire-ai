@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getCvSignedUrl } from '@/lib/actions/applications';
+import { forceAnalyzeCv } from '@/lib/actions/ai-analyze';
 import CVAnalysisDrawer from '@/components/dashboard/CVAnalysisDrawer';
 import { 
   Users, 
@@ -72,6 +73,25 @@ export default function ApplicationsTable({
   // Drawer state
   const [selectedApp, setSelectedApp] = useState<ApplicationItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  // Scoring state
+  const [scoringId, setScoringId] = useState<string | null>(null);
+  const [scoringError, setScoringError] = useState<{ id: string, msg: string } | null>(null);
+
+  const handleForceScore = async (applicationId: string) => {
+    setScoringId(applicationId);
+    setScoringError(null);
+    try {
+      const res = await forceAnalyzeCv(applicationId);
+      if (!res.success) {
+        setScoringError({ id: applicationId, msg: res.error || 'Bilinmeyen hata' });
+      }
+    } catch (err: any) {
+      setScoringError({ id: applicationId, msg: err.message || 'Beklenmeyen bir hata oluştu' });
+    } finally {
+      setScoringId(null);
+    }
+  };
 
   useEffect(() => {
     setApplications(initialApplications);
@@ -312,14 +332,37 @@ export default function ApplicationsTable({
 
                     {/* İşlemler (AI Raporu & CV İndir) */}
                     <td className="py-4 px-5 text-right space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => openAnalysisDrawer(app)}
-                        className="px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs inline-flex items-center gap-1.5 transition-all"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>AI Raporu</span>
-                      </button>
+                      {!analysisObj ? (
+                        <div className="inline-flex flex-col items-end gap-1 mr-2 align-middle">
+                          <button
+                            type="button"
+                            disabled={scoringId === app.id}
+                            onClick={() => handleForceScore(app.id)}
+                            className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs inline-flex items-center gap-1.5 transition-all disabled:opacity-50"
+                          >
+                            {scoringId === app.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3.5 h-3.5" />
+                            )}
+                            <span>Yapay Zekaya Puanlat</span>
+                          </button>
+                          {scoringError?.id === app.id && (
+                            <span className="text-[10px] text-red-400 font-medium max-w-[150px] leading-tight text-right mt-1">
+                              {scoringError.msg}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openAnalysisDrawer(app)}
+                          className="px-3 py-2 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 font-semibold text-xs inline-flex items-center gap-1.5 transition-all"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>AI Raporu</span>
+                        </button>
+                      )}
 
                       {app.cv_storage_path && (
                         <button
