@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '.env.local' });
+// dotenv removed, run with --env-file=.env.local
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 async function run() {

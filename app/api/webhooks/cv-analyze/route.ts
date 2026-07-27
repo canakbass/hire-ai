@@ -95,7 +95,7 @@ Yalnızca aşağıdaki JSON şemasında geçerli ve eksiksiz bir JSON nesnesi d�
 
   // 6. Call Gemini API
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const aiModel = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+  const aiModel = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
   const result = await aiModel.generateContent([
     fullPrompt,
@@ -137,7 +137,7 @@ Yalnızca aşağıdaki JSON şemasında geçerli ve eksiksiz bir JSON nesnesi d�
       strengths: parsedResult.strengths || [],
       gaps: parsedResult.gaps || [],
       verdict: verdict,
-      model: 'gemini-1.5-flash-latest'
+      model: 'gemini-flash-latest'
     }, { onConflict: 'application_id' }); // Upsert ensures we overwrite if manual trigger
 
   if (insertError) {
