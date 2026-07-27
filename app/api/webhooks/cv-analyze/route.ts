@@ -127,18 +127,36 @@ Yalnızca aşağıdaki JSON şemasında geçerli ve eksiksiz bir JSON nesnesi d�
   }
 
   // 9. Save Analysis
-  const { error: insertError } = await supabaseAdmin
+  const analysisPayload = {
+    application_id: appData.id,
+    org_id: appData.org_id,
+    match_score: matchScore,
+    extracted: parsedResult.extracted || {},
+    strengths: parsedResult.strengths || [],
+    gaps: parsedResult.gaps || [],
+    verdict: verdict,
+    model: 'gemini-flash-latest'
+  };
+
+  const { data: existingAnalysis } = await supabaseAdmin
     .from('cv_analyses')
-    .upsert({
-      application_id: appData.id,
-      org_id: appData.org_id,
-      match_score: matchScore,
-      extracted: parsedResult.extracted || {},
-      strengths: parsedResult.strengths || [],
-      gaps: parsedResult.gaps || [],
-      verdict: verdict,
-      model: 'gemini-flash-latest'
-    }, { onConflict: 'application_id' }); // Upsert ensures we overwrite if manual trigger
+    .select('id')
+    .eq('application_id', appData.id)
+    .single();
+
+  let insertError;
+  if (existingAnalysis) {
+    const { error } = await supabaseAdmin
+      .from('cv_analyses')
+      .update(analysisPayload)
+      .eq('id', existingAnalysis.id);
+    insertError = error;
+  } else {
+    const { error } = await supabaseAdmin
+      .from('cv_analyses')
+      .insert(analysisPayload);
+    insertError = error;
+  }
 
   if (insertError) {
     console.error('Failed to insert cv_analysis:', insertError);
