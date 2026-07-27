@@ -167,7 +167,7 @@ export default function CVAnalysisDrawer({
                     <div className="pt-2">
                       <span className="text-[11px] font-semibold text-slate-400 block mb-2">Tespit Edilen Yetkinlikler:</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {analysis.extracted.skills.map((skill, idx) => (
+                        {analysis.extracted.skills.map((skill: string, idx: number) => (
                           <span key={idx} className="px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium">
                             {skill}
                           </span>
@@ -186,7 +186,7 @@ export default function CVAnalysisDrawer({
                     <span>Güçlü Yönler (Kriter Eşleşmeleri)</span>
                   </h4>
                   <ul className="space-y-2">
-                    {analysis.strengths.map((item, idx) => (
+                    {analysis.strengths.map((item: string, idx: number) => (
                       <li key={idx} className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-200/90 flex items-start gap-2.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0 mt-1.5" />
                         <span>{item}</span>
@@ -204,7 +204,7 @@ export default function CVAnalysisDrawer({
                     <span>Gelişim Alanları & Eksik Kriterler</span>
                   </h4>
                   <ul className="space-y-2">
-                    {analysis.gaps.map((item, idx) => (
+                    {analysis.gaps.map((item: string, idx: number) => (
                       <li key={idx} className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/20 text-xs text-amber-200/90 flex items-start gap-2.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-1.5" />
                         <span>{item}</span>
