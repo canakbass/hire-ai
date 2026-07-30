@@ -399,11 +399,11 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                             </p>
                           </div>
 
-                          {selectedCandidate.analysis?.extracted?.skills && (
+                          {selectedCandidate.cv_analyses?.[0]?.extracted?.skills && (
                             <div>
                               <h6 className="text-[10px] text-slate-500 font-semibold mb-1.5">Tespit Edilen Yetenekler</h6>
                               <div className="flex flex-wrap gap-1">
-                                {selectedCandidate.analysis.extracted.skills.map((s: string, idx: number) => (
+                                {(selectedCandidate.cv_analyses[0].extracted.skills as string[]).map((s: string, idx: number) => (
                                   <span key={idx} className="text-[9px] px-1.5 py-0.5 bg-[#151c2f] border border-[#1e293b] text-slate-400 rounded">
                                     {s}
                                   </span>
