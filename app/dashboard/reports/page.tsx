@@ -2,9 +2,10 @@ import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
 import { redirect } from 'next/navigation';
-import { BarChart3, Users, Briefcase, PhoneCall, Trophy, ArrowUpRight, ArrowDownRight, Clock, SlidersHorizontal } from 'lucide-react';
+import Link from 'next/link';
+import { BarChart3, Users, Briefcase, PhoneCall, Trophy, Clock, SlidersHorizontal } from 'lucide-react';
 
-export default async function ReportsPage() {
+export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const authData = await getCurrentUserAndOrg();
   if (!authData || !authData.activeOrg) {
     redirect('/login');
@@ -12,24 +13,35 @@ export default async function ReportsPage() {
 
   const supabase = await createClient();
   
-  // Fetch basic stats
+  const { period } = await searchParams;
+  const isYear = period === 'year';
+  
+  let dateFilter = new Date();
+  if (isYear) {
+    dateFilter.setMonth(0, 1);
+    dateFilter.setHours(0, 0, 0, 0);
+  } else {
+    dateFilter.setDate(dateFilter.getDate() - 30);
+  }
+  const dateStr = dateFilter.toISOString();
+
   const [
     { count: jobsCount },
     { count: appsCount },
     { count: interviewsCount },
     { count: shortlistsCount }
   ] = await Promise.all([
-    supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id),
-    supabase.from('applications').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id),
-    supabase.from('interviews').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id),
-    supabase.from('applications').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).in('status', ['shortlisted', 'hired'])
+    supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).gte('created_at', dateStr),
+    supabase.from('applications').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).gte('created_at', dateStr),
+    supabase.from('interviews').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).gte('created_at', dateStr),
+    supabase.from('applications').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).in('status', ['shortlisted', 'hired']).gte('created_at', dateStr)
   ]);
 
   const kpis = [
-    { title: 'Aktif Pozisyonlar', value: jobsCount || 0, trend: '+12%', isUp: true, icon: Briefcase, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-    { title: 'Toplam Başvuru', value: appsCount || 0, trend: '+24%', isUp: true, icon: Users, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { title: 'Otonom Mülakatlar', value: interviewsCount || 0, trend: '+5%', isUp: true, icon: PhoneCall, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { title: 'Kısa Listeye Alınan', value: shortlistsCount || 0, trend: '-2%', isUp: false, icon: Trophy, color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { title: 'Aktif Pozisyonlar', value: jobsCount || 0, icon: Briefcase, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
+    { title: 'Toplam Başvuru', value: appsCount || 0, icon: Users, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { title: 'Otonom Mülakatlar', value: interviewsCount || 0, icon: PhoneCall, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { title: 'Kısa Listeye Alınan', value: shortlistsCount || 0, icon: Trophy, color: 'text-amber-400', bg: 'bg-amber-500/10' },
   ];
 
   return (
@@ -47,8 +59,18 @@ export default async function ReportsPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="bg-[#151c2f] border border-[#1e293b] rounded-xl flex items-center p-1">
-            <button className="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold shadow-md">Son 30 Gün</button>
-            <button className="px-4 py-1.5 rounded-lg text-slate-400 hover:text-white text-xs font-medium transition-colors">Bu Yıl</button>
+            <Link 
+              href="/dashboard/reports?period=30days" 
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${!isYear ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+            >
+              Son 30 Gün
+            </Link>
+            <Link 
+              href="/dashboard/reports?period=year" 
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isYear ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}
+            >
+              Bu Yıl
+            </Link>
           </div>
         </div>
       </div>
@@ -63,9 +85,8 @@ export default async function ReportsPage() {
               <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center`}>
                 <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
               </div>
-              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${kpi.isUp ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                {kpi.isUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {kpi.trend}
+              <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full bg-slate-800 text-slate-400`}>
+                Aktif
               </div>
             </div>
             

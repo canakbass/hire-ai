@@ -53,7 +53,7 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
               <tr>
                 <th className="px-6 py-4">Aday Profili</th>
                 <th className="px-6 py-4">İletişim</th>
-                <th className="px-6 py-4">Özgeçmiş URL</th>
+                <th className="px-6 py-4 text-center">İşlemler</th>
                 <th className="px-6 py-4 text-right">Kayıt Tarihi</th>
               </tr>
             </thead>
@@ -75,8 +75,10 @@ export default async function CandidatesPage({ searchParams }: { searchParams: P
                     {cand.email}
                     {cand.phone && <p className="text-xs text-slate-500 mt-1">{cand.phone}</p>}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs text-slate-500">Uygulama İçinden İnceleyin</span>
+                  <td className="px-6 py-4 text-center">
+                    <Link href={`/dashboard/candidates/${cand.id}`} className="inline-flex px-4 py-2 bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/20 text-indigo-400 rounded-xl text-xs font-bold transition-colors items-center justify-center">
+                      Profili İncele
+                    </Link>
                   </td>
                   <td className="px-6 py-4 text-right text-slate-500 text-xs">
                     {new Date(cand.created_at).toLocaleDateString('tr-TR')}
