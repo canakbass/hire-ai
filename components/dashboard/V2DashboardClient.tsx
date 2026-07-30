@@ -15,7 +15,9 @@ import {
   ShieldAlert,
   CalendarDays,
   Search,
-  Mic
+  Mic,
+  Phone,
+  Loader2
 } from 'lucide-react';
 
 interface V2DashboardClientProps {
@@ -31,6 +33,7 @@ interface V2DashboardClientProps {
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { Database } from '@/lib/types/database.types';
+import { startVoiceInterview } from '@/lib/actions/vapi_actions';
 
 type AppStatus = Database['public']['Enums']['app_status'];
 
@@ -38,6 +41,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
   const [selectedCandidate, setSelectedCandidate] = useState(recentApps[0] || null);
   const [activeTab, setActiveTab] = useState('AI Analiz');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCalling, setIsCalling] = useState(false);
   const router = useRouter();
 
   const handleUpdateStatus = async (status: AppStatus) => {
@@ -48,6 +52,21 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
     setSelectedCandidate({ ...selectedCandidate, status });
     setIsUpdating(false);
     router.refresh();
+  };
+
+  const handleStartCall = async () => {
+    if (!selectedCandidate) return;
+    setIsCalling(true);
+    const result = await startVoiceInterview(selectedCandidate.id);
+    setIsCalling(false);
+    
+    if (result.error) {
+      alert(result.error);
+    } else {
+      alert('Arama başarıyla başlatıldı! Aday şu an aranıyor.');
+      setSelectedCandidate({ ...selectedCandidate, status: 'interview_pending' });
+      router.refresh();
+    }
   };
 
   return (
@@ -433,10 +452,18 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                           </p>
                         </div>
                       ) : (
-                        <div className="bg-[#0b0f19] border border-[#1e293b] border-dashed rounded-xl p-6 text-center">
-                          <Mic className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+                        <div className="bg-[#0b0f19] border border-[#1e293b] border-dashed rounded-xl p-6 text-center flex flex-col items-center">
+                          <Mic className="w-6 h-6 text-slate-600 mb-2" />
                           <p className="text-xs font-semibold text-slate-400 mb-1">AI Mülakatı Bekleniyor</p>
-                          <p className="text-[10px] text-slate-500">Aday henüz otonom sesli mülakata girmedi veya mülakat aşamasına geçemedi.</p>
+                          <p className="text-[10px] text-slate-500 mb-4">Aday henüz otonom sesli mülakata girmedi veya mülakat aşamasına geçemedi.</p>
+                          <button 
+                            onClick={handleStartCall}
+                            disabled={isCalling || selectedCandidate.status === 'interview_pending'}
+                            className="w-full sm:w-auto px-6 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-600/20"
+                          >
+                            {isCalling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Phone className="w-4 h-4" />}
+                            {isCalling ? 'Aranıyor...' : (selectedCandidate.status === 'interview_pending' ? 'Arama Bekleniyor' : 'Adayı Telefonla Ara (AI)')}
+                          </button>
                         </div>
                       )
                     )}
