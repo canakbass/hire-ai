@@ -11,7 +11,7 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
       return { error: 'Gemini API anahtarı eksik. Lütfen .env.local dosyasında GEMINI_API_KEY tanımlayın.' };
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     // Format history for Gemini
     const systemPrompt = messages.find(m => m.role === 'system')?.content || 'Sen yetenekli bir İK Asistanısın (HireAI). Aday değerlendirme ve işe alım süreçlerinde kullanıcıya yardımcı olursun.';

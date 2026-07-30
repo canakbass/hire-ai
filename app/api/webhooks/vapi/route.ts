@@ -40,7 +40,7 @@ export async function POST(req: Request) {
       
       try {
         if (process.env.GEMINI_API_KEY && transcript) {
-          const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
           const prompt = `
           Sen uzman bir İK Yöneticisisin. Aşağıda adayın yapay zeka ile yaptığı bir mülakatın dökümü (transkripti) bulunuyor. 
           Lütfen bu mülakatı teknik yeterlilik, iletişim becerisi ve probleme yaklaşım açısından değerlendir.
