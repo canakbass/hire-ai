@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { PhoneCall, Play, Clock, CheckCircle2, XCircle, Search, Filter } from 'lucide-react';
 import Link from 'next/link';
 
-export default async function InterviewsPage() {
+export default async function InterviewsPage({ searchParams }: { searchParams: { q?: string } }) {
   const authData = await getCurrentUserAndOrg();
   if (!authData || !authData.activeOrg) {
     redirect('/login');
@@ -22,19 +22,30 @@ export default async function InterviewsPage() {
         candidates (
           full_name
         ),
-        jobs (
-          title
+        jobs!inner (
+          title,
+          status
         )
       )
     `)
     .eq('org_id', authData.activeOrg.id)
+    .neq('applications.jobs.status', 'closed')
     .order('created_at', { ascending: false });
 
   if (error) {
     console.error("Interviews fetch error:", error);
   }
 
-  const interviewList = interviews || [];
+  let interviewList = interviews || [];
+  if (searchParams.q) {
+    const q = searchParams.q.toLowerCase();
+    interviewList = interviewList.filter(interview => {
+      const app = Array.isArray(interview.applications) ? interview.applications[0] : interview.applications;
+      return app?.candidates?.full_name?.toLowerCase().includes(q) || 
+             app?.jobs?.title?.toLowerCase().includes(q) ||
+             interview.id.toLowerCase().includes(q);
+    });
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-12">
@@ -49,19 +60,21 @@ export default async function InterviewsPage() {
             Yapay zeka tarafından gerçekleştirilen sesli mülakatların kayıtlarını ve değerlendirmelerini inceleyin.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <form className="flex items-center gap-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
+              name="q"
               type="text" 
+              defaultValue={searchParams.q || ''}
               placeholder="Aday veya pozisyon ara..." 
               className="bg-[#0b0f19] border border-[#1e293b] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors w-64"
             />
           </div>
-          <button className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-            <Filter className="w-4 h-4" /> Filtrele
+          <button type="submit" className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <Filter className="w-4 h-4" /> Ara / Filtrele
           </button>
-        </div>
+        </form>
       </div>
 
       {/* Table */}

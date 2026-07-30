@@ -1,10 +1,11 @@
 import React from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
 import { redirect } from 'next/navigation';
 import { Star, Search, Filter, Briefcase, Mail, Phone, Calendar } from 'lucide-react';
 
-export default async function ShortlistsPage() {
+export default async function ShortlistsPage({ searchParams }: { searchParams: { q?: string } }) {
   const authData = await getCurrentUserAndOrg();
   if (!authData || !authData.activeOrg) {
     redirect('/login');
@@ -16,17 +17,25 @@ export default async function ShortlistsPage() {
     .select(`
       *,
       candidates (*),
-      jobs (title)
+      jobs!inner (title, status)
     `)
     .eq('org_id', authData.activeOrg.id)
     .in('status', ['shortlisted', 'hired'])
+    .neq('jobs.status', 'closed')
     .order('created_at', { ascending: false });
 
   if (error) {
     console.error("Shortlists fetch error:", error);
   }
 
-  const list = shortlistedApps || [];
+  let list = shortlistedApps || [];
+  if (searchParams.q) {
+    const q = searchParams.q.toLowerCase();
+    list = list.filter(app => 
+      app.candidates?.full_name?.toLowerCase().includes(q) || 
+      app.jobs?.title?.toLowerCase().includes(q)
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-12">
@@ -41,19 +50,21 @@ export default async function ShortlistsPage() {
             Yöneticiye önerilen, yüksek skorlu veya işe alım kararı verilen yıldızlı adaylarınız.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <form className="flex items-center gap-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input 
+              name="q"
               type="text" 
+              defaultValue={searchParams.q || ''}
               placeholder="Kısa listede ara..." 
               className="bg-[#0b0f19] border border-[#1e293b] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors w-64"
             />
           </div>
-          <button className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
-            <Filter className="w-4 h-4" /> Filtrele
+          <button type="submit" className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <Filter className="w-4 h-4" /> Ara / Filtrele
           </button>
-        </div>
+        </form>
       </div>
 
       {/* Grid */}
@@ -110,9 +121,9 @@ export default async function ShortlistsPage() {
                     </div>
                   </div>
                   
-                  <button className="w-full py-2 bg-[#0b0f19] hover:bg-[#1e293b] border border-[#1e293b] rounded-xl text-xs font-semibold text-white transition-colors">
+                  <Link href="/dashboard/applications" className="w-full py-2 bg-[#0b0f19] hover:bg-[#1e293b] border border-[#1e293b] rounded-xl text-xs font-semibold text-white transition-colors block text-center">
                     Profili İncele
-                  </button>
+                  </Link>
                 </div>
               </div>
             );
