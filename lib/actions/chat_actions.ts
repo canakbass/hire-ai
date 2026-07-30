@@ -19,9 +19,23 @@ const createJobDeclaration: FunctionDeclaration = {
       employment_type: { type: SchemaType.STRING, description: 'Çalışma modeli (Remote, Ofis, Hibrit)' },
       experience_level: { type: SchemaType.STRING, description: 'Deneyim seviyesi (Junior, Mid, Senior vb.)' },
       description: { type: SchemaType.STRING, description: 'İşin tanımı ve genel görevleri (Markdown veya HTML desteklenir)' },
-      requirements: { type: SchemaType.STRING, description: 'Adayda aranan özellikler, yetenekler (Markdown veya HTML desteklenir)' }
+      requirements: { type: SchemaType.STRING, description: 'Adayda aranan özellikler, yetenekler (Markdown veya HTML desteklenir)' },
+      required_skills: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: 'Zorunlu teknik veya yumuşak yetenekler (Örn: ["React", "Node.js", "İletişim"])' },
+      nice_to_have_skills: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: 'Olsa iyi olur dediğimiz ekstra yetenekler (Örn: ["Docker", "GraphQL"])' },
+      interview_questions: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: 'Otonom sesli yapay zeka mülakatında adaya sorulacak 3-5 adet mülakat sorusu' }
     },
     required: ['title']
+  }
+};
+
+const getTopCandidatesDeclaration: FunctionDeclaration = {
+  name: 'get_top_candidates',
+  description: 'Sistemdeki en yüksek eşleşme skoruna sahip en iyi adayları getirir. Kullanıcı "en iyi adayları getir", "kısa liste", "en iyi 5 adayı sırala" gibi bir talepte bulunduğunda bu aracı kullan.',
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      limit: { type: SchemaType.NUMBER, description: 'Getirilecek aday sayısı (varsayılan 5)' }
+    }
   }
 };
 
@@ -33,7 +47,7 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
 
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-flash-latest',
-      tools: [{ functionDeclarations: [createJobDeclaration] }]
+      tools: [{ functionDeclarations: [createJobDeclaration, getTopCandidatesDeclaration] }]
     });
 
     const systemPrompt = messages.find(m => m.role === 'system')?.content || 'Sen yetenekli bir İK Asistanısın (HireAI). Aday değerlendirme ve işe alım süreçlerinde kullanıcıya yardımcı olursun. KULLANICI İLAN OLUŞTURMAK İSTERSE, "create_job_posting" fonksiyonunu çağırarak doğrudan sisteme ekleyebilirsin. Ancak eklemeden önce emin olmak için pozisyon unvanı, departman vb. bilgileri kullanıcıdan aldığından emin ol.';
@@ -101,8 +115,9 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
             pass_threshold: 65,
             reject_threshold: 40,
             shortlist_size: 10,
-            required_skills: [],
-            nice_to_have_skills: [],
+            required_skills: args.required_skills || [],
+            nice_to_have_skills: args.nice_to_have_skills || [],
+            interview_questions: args.interview_questions || [],
             require_manual_call_approval: false
           });
         }
@@ -114,6 +129,66 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
         // Instead of sending functionResponse to model (which causes 400 Bad Request Role 'function' is not supported in some SDK versions)
         // We just return the success message directly to the frontend.
         return { text: `Tebrikler! **${args.title}** pozisyonu başarıyla "Taslak" olarak veritabanına eklendi.\n\nPozisyon yönetimi sayfasından ilanı düzenleyebilir, otonom sesli mülakat senaryolarını veya eleme kriterlerini detaylandırabilirsiniz.` };
+      }
+      
+      if (call.name === 'get_top_candidates') {
+        const authData = await getCurrentUserAndOrg();
+        if (!authData?.activeOrg) {
+          return { error: 'Aktif organizasyon bulunamadı. Lütfen oturumunuzu kontrol edin.' };
+        }
+        
+        const supabase = await createClient();
+        const args = call.args as any;
+        const limit = args.limit || 5;
+
+        // Fetch applications joined with cv_analyses and candidates
+        const { data: analyses, error } = await supabase
+          .from('cv_analyses')
+          .select(`
+            match_score,
+            application_id,
+            applications (
+              id,
+              status,
+              candidates (
+                full_name,
+                email
+              ),
+              jobs (
+                title
+              )
+            )
+          `)
+          .eq('org_id', authData.activeOrg.id)
+          .order('match_score', { ascending: false })
+          .limit(limit);
+
+        if (error) {
+          console.error("Top candidates fetch error", error);
+          return { text: "Üzgünüm, en iyi adayları getirirken veritabanında bir hata oluştu." };
+        }
+
+        if (!analyses || analyses.length === 0) {
+          return { text: "Şu anda sistemde değerlendirilmiş (skorlanmış) herhangi bir aday bulunmuyor." };
+        }
+
+        let responseText = `Sistemdeki en yüksek CV eşleşme skoruna sahip ilk ${analyses.length} aday:\n\n`;
+        
+        analyses.forEach((analysis: any, index: number) => {
+          const app = Array.isArray(analysis.applications) ? analysis.applications[0] : analysis.applications;
+          const candidate = app?.candidates;
+          const job = app?.jobs;
+          
+          const candidateName = candidate ? candidate.full_name : 'İsimsiz Aday';
+          const jobTitle = job ? job.title : 'Bilinmeyen Pozisyon';
+          const score = analysis.match_score || 0;
+          
+          responseText += `${index + 1}. **${candidateName}** — ${score} Puan (Pozisyon: ${jobTitle})\n`;
+        });
+        
+        responseText += `\nBu adayların detaylarını "En İyi Adaylar" veya "Aday Havuzu" menüsünden inceleyebilirsiniz.`;
+
+        return { text: responseText };
       }
     }
 

@@ -1,48 +1,176 @@
 import React from 'react';
-import { PhoneCall, Sparkles, ShieldCheck, Clock } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
+import { redirect } from 'next/navigation';
+import { PhoneCall, Play, Clock, CheckCircle2, XCircle, Search, Filter } from 'lucide-react';
+import Link from 'next/link';
 
-export default function InterviewsPlaceholderPage() {
+export default async function InterviewsPage() {
+  const authData = await getCurrentUserAndOrg();
+  if (!authData || !authData.activeOrg) {
+    redirect('/login');
+  }
+
+  const supabase = await createClient();
+  const { data: interviews, error } = await supabase
+    .from('interviews')
+    .select(`
+      *,
+      applications (
+        id,
+        status,
+        candidates (
+          full_name
+        ),
+        jobs (
+          title
+        )
+      )
+    `)
+    .eq('org_id', authData.activeOrg.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Interviews fetch error:", error);
+  }
+
+  const interviewList = interviews || [];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto py-12">
-      <div className="glass-panel p-10 sm:p-14 rounded-3xl border border-indigo-500/30 text-center space-y-6 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg glow-primary">
-          <PhoneCall className="w-10 h-10 text-white" />
-        </div>
-
-        <div className="space-y-2 max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold text-xs">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Faz 3 Yol Haritası Geliştirmesi</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            AI Sesli Mülakatlar (Otonom Sesli Değerlendirme)
-          </h2>
-          <p className="text-slate-300 text-sm leading-relaxed">
-            Adaylar ile gerçek zamanlı telefon veya tarayıcı üzerinden sesli ön mülakat yapacak olan otonom sesli yapay zeka modülü, projenizin <strong>Faz 3</strong> aşamasında aktif edilecektir.
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <PhoneCall className="w-6 h-6 text-indigo-400" />
+            AI Otonom Mülakatlar
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Yapay zeka tarafından gerçekleştirilen sesli mülakatların kayıtlarını ve değerlendirmelerini inceleyin.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-left border-t border-white/10 max-w-2xl mx-auto">
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-indigo-400">Canlı Telefon Çağrısı</h4>
-            <p className="text-[11px] text-slate-400">Adayın numarası aranılarak rubrikteki teknik sorular sesli yöneltilir.</p>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text" 
+              placeholder="Aday veya pozisyon ara..." 
+              className="bg-[#0b0f19] border border-[#1e293b] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors w-64"
+            />
           </div>
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-indigo-400">Gerçek Zamanlı Transkript</h4>
-            <p className="text-[11px] text-slate-400">Tüm konuşma anlık olarak yazıya dökülür ve ses kaydı saklanır.</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-indigo-400">Otomatik Baraj Elemesi</h4>
-            <p className="text-[11px] text-slate-400">Mülakat sonucuna göre adayın puanı hesaplanıp kısa listeye alınır.</p>
-          </div>
+          <button className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <Filter className="w-4 h-4" /> Filtrele
+          </button>
         </div>
+      </div>
 
-        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
-          <Clock className="w-4 h-4 text-indigo-400" />
-          <span>Şu anda Faz 1 & Faz 2 (AI CV Puanlama Akışı) aktif olarak kullanılmaktadır.</span>
-        </div>
+      {/* Table */}
+      <div className="bg-[#151c2f] border border-[#1e293b] rounded-2xl overflow-hidden shadow-xl">
+        {interviewList.length === 0 ? (
+          <div className="p-12 text-center flex flex-col items-center">
+            <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+              <PhoneCall className="w-8 h-8 text-indigo-400 opacity-50" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">Henüz mülakat kaydı yok</h3>
+            <p className="text-slate-400 text-sm max-w-md mx-auto">
+              Adaylar otonom sesli mülakata girdiklerinde ses kayıtları, transkriptler ve AI değerlendirmeleri burada listelenecektir.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left text-sm text-slate-300">
+              <thead className="bg-[#0b0f19]/50 text-xs uppercase text-slate-400 font-semibold border-b border-[#1e293b]">
+                <tr>
+                  <th className="px-6 py-4">Aday</th>
+                  <th className="px-6 py-4">Pozisyon</th>
+                  <th className="px-6 py-4">Mülakat Tarihi</th>
+                  <th className="px-6 py-4">Durum</th>
+                  <th className="px-6 py-4">AI Skoru</th>
+                  <th className="px-6 py-4 text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e293b]">
+                {interviewList.map((interview) => {
+                  const app = Array.isArray(interview.applications) ? interview.applications[0] : interview.applications;
+                  const candidate = app?.candidates;
+                  const job = app?.jobs;
+                  
+                  return (
+                    <tr key={interview.id} className="hover:bg-[#1e293b]/30 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">
+                            {candidate?.full_name?.charAt(0) || 'A'}
+                          </div>
+                          <div>
+                            <div className="font-semibold text-white">{candidate?.full_name || 'İsimsiz Aday'}</div>
+                            <div className="text-xs text-slate-500">ID: {interview.id.substring(0,8)}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-slate-300">
+                        {job?.title || 'Bilinmiyor'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-slate-400">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" />
+                          {new Date(interview.created_at).toLocaleDateString('tr-TR')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {interview.status === 'completed' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-medium">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Tamamlandı
+                          </span>
+                        ) : interview.status === 'failed' ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-medium">
+                            <XCircle className="w-3.5 h-3.5" /> Hata / Koptu
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-medium">
+                            <Clock className="w-3.5 h-3.5" /> Bekliyor
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div className="font-bold text-white">{interview.overall_score || 0}</div>
+                          <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-500 rounded-full" 
+                              style={{ width: `${interview.overall_score || 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          {interview.recording_url && (
+                            <a 
+                              href={interview.recording_url} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+                              title="Ses Kaydını Dinle"
+                            >
+                              <Play className="w-4 h-4" />
+                            </a>
+                          )}
+                          <Link 
+                            href={`/dashboard/applications`} 
+                            className="px-3 py-1.5 rounded-xl bg-[#0b0f19] border border-[#1e293b] text-slate-300 hover:text-white transition-colors"
+                          >
+                            Detay
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

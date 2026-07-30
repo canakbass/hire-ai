@@ -1,49 +1,149 @@
 import React from 'react';
-import { SlidersHorizontal, Sparkles, Star, LayoutGrid, Clock } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
+import { redirect } from 'next/navigation';
+import { SlidersHorizontal, Search, Star, FileText, PhoneCall, Trophy, Filter } from 'lucide-react';
 
-export default function EvaluationsPlaceholderPage() {
+export default async function EvaluationsPage() {
+  const authData = await getCurrentUserAndOrg();
+  if (!authData || !authData.activeOrg) {
+    redirect('/login');
+  }
+
+  const supabase = await createClient();
+  const { data: evaluations, error } = await supabase
+    .from('evaluations')
+    .select(`
+      *,
+      applications (
+        id,
+        status,
+        candidates (
+          full_name
+        ),
+        jobs (
+          title
+        )
+      )
+    `)
+    .eq('org_id', authData.activeOrg.id)
+    .order('final_score', { ascending: false });
+
+  if (error) {
+    console.error("Evaluations fetch error:", error);
+  }
+
+  const evals = evaluations || [];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto py-12">
-      <div className="glass-panel p-10 sm:p-14 rounded-3xl border border-indigo-500/30 text-center space-y-6 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
-        
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center mx-auto shadow-lg glow-primary">
-          <SlidersHorizontal className="w-10 h-10 text-white" />
-        </div>
-
-        <div className="space-y-2 max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold text-xs">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>V3 Yapım Aşamasında</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Aday Değerlendirmeleri & Scorecard
-          </h2>
-          <p className="text-slate-300 text-sm leading-relaxed">
-            AI mülakatları ve analizleri tamamlanan adayların detaylı performans karneleri (Scorecard) bu ekranda toplanacak ve birbirleriyle kıyaslanabilecektir.
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <SlidersHorizontal className="w-6 h-6 text-indigo-400" />
+            Değerlendirmeler & Scorecard
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Adayların CV tarama ve mülakat sonuçlarının birleştirildiği nihai performans karneleri.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 text-left border-t border-white/10 max-w-2xl mx-auto">
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-indigo-400">Yetenek Kıyaslaması</h4>
-            <p className="text-[11px] text-slate-400">Adayları teknik ve yumuşak yetenek skorlarına göre yan yana karşılaştırın.</p>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text" 
+              placeholder="Aday veya pozisyon ara..." 
+              className="bg-[#0b0f19] border border-[#1e293b] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors w-64"
+            />
           </div>
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-indigo-400">Rubrik Uyumluluğu</h4>
-            <p className="text-[11px] text-slate-400">İlan oluştururken girdiğiniz spesifik kriterlerin başarı oranını görün.</p>
-          </div>
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-indigo-400">Kültürel Uyum</h4>
-            <p className="text-[11px] text-slate-400">Mülakat sonuçlarından çıkarılan takım çalışması ve uyum analizleri.</p>
-          </div>
-        </div>
-
-        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
-          <Clock className="w-4 h-4 text-indigo-400" />
-          <span>Şu anda aday havuzundaki aday detaylarından temel metrikleri inceleyebilirsiniz.</span>
+          <button className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <Filter className="w-4 h-4" /> Filtrele
+          </button>
         </div>
       </div>
+
+      {/* Grid */}
+      {evals.length === 0 ? (
+        <div className="bg-[#151c2f] border border-[#1e293b] rounded-2xl p-12 text-center flex flex-col items-center shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-4">
+            <Trophy className="w-8 h-8 text-indigo-400 opacity-50" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Henüz değerlendirme yok</h3>
+          <p className="text-slate-400 text-sm max-w-md mx-auto">
+            Adaylar testleri veya mülakatları tamamladığında nihai değerlendirme karneleri (Scorecard) burada görünecektir.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {evals.map((ev) => {
+            const app = Array.isArray(ev.applications) ? ev.applications[0] : ev.applications;
+            const candidate = app?.candidates;
+            const job = app?.jobs;
+            
+            return (
+              <div key={ev.id} className="bg-[#151c2f] border border-[#1e293b] rounded-2xl p-5 shadow-xl hover:border-indigo-500/50 transition-colors group relative overflow-hidden">
+                {ev.is_shortlisted && (
+                  <div className="absolute top-0 right-0 p-3">
+                    <Star className="w-5 h-5 text-amber-400 fill-amber-400 drop-shadow-md" />
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-4 mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-lg shadow-lg">
+                    {candidate?.full_name?.charAt(0) || 'A'}
+                  </div>
+                  <div>
+                    <h3 className="text-white font-bold">{candidate?.full_name || 'İsimsiz Aday'}</h3>
+                    <p className="text-xs text-slate-400">{job?.title || 'Bilinmeyen Pozisyon'}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Final Score */}
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-slate-400 font-medium flex items-center gap-1.5">
+                        <Trophy className="w-3.5 h-3.5 text-indigo-400" /> Nihai Skor
+                      </span>
+                      <span className="text-white font-bold">{ev.final_score || 0}/100</span>
+                    </div>
+                    <div className="h-2 w-full bg-[#0b0f19] rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style={{ width: `${ev.final_score || 0}%` }} />
+                    </div>
+                  </div>
+
+                  {/* CV Score */}
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-slate-400 font-medium flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5" /> CV Eşleşmesi
+                      </span>
+                      <span className="text-white font-bold">{ev.cv_score || 0}/100</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-[#0b0f19] rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-500 rounded-full" style={{ width: `${ev.cv_score || 0}%` }} />
+                    </div>
+                  </div>
+
+                  {/* Interview Score */}
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-slate-400 font-medium flex items-center gap-1.5">
+                        <PhoneCall className="w-3.5 h-3.5" /> Mülakat Başarısı
+                      </span>
+                      <span className="text-white font-bold">{ev.interview_score || 0}/100</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-[#0b0f19] rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${ev.interview_score || 0}%` }} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

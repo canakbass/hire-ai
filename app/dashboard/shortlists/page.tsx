@@ -1,45 +1,124 @@
 import React from 'react';
-import { Award, Sparkles, Users, CheckCircle2, Clock } from 'lucide-react';
+import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
+import { redirect } from 'next/navigation';
+import { Star, Search, Filter, Briefcase, Mail, Phone, Calendar } from 'lucide-react';
 
-export default function ShortlistsPlaceholderPage() {
+export default async function ShortlistsPage() {
+  const authData = await getCurrentUserAndOrg();
+  if (!authData || !authData.activeOrg) {
+    redirect('/login');
+  }
+
+  const supabase = await createClient();
+  const { data: shortlistedApps, error } = await supabase
+    .from('applications')
+    .select(`
+      *,
+      candidates (*),
+      jobs (title)
+    `)
+    .eq('org_id', authData.activeOrg.id)
+    .in('status', ['shortlisted', 'hired'])
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error("Shortlists fetch error:", error);
+  }
+
+  const list = shortlistedApps || [];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-4xl mx-auto py-12">
-      <div className="glass-panel p-10 sm:p-14 rounded-3xl border border-cyan-500/30 text-center space-y-6 relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
-        
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center mx-auto shadow-lg glow-primary">
-          <Award className="w-10 h-10 text-white" />
-        </div>
-
-        <div className="space-y-2 max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold text-xs">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Faz 4 Yol Haritası Geliştirmesi</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Kısa Listeler & Karşılaştırma Karar Modülü
-          </h2>
-          <p className="text-slate-300 text-sm leading-relaxed">
-            Hem CV analizi hem de AI sesli mülakattan geçen finalist adayların puanlarının ağırlıklandırılarak karşılaştırıldığı final paneli, projenizin <strong>Faz 4</strong> aşamasında devreye alınacaktır.
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
+            En İyi Adaylar (Kısa Liste)
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Yöneticiye önerilen, yüksek skorlu veya işe alım kararı verilen yıldızlı adaylarınız.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 text-left border-t border-white/10 max-w-xl mx-auto">
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-cyan-400">Çoklu Aday Karşılaştırma</h4>
-            <p className="text-[11px] text-slate-400">En iyi 5 adayın yetkinlik haritaları ve güçlü/zayıf yön tablosu yan yana kıyaslanır.</p>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input 
+              type="text" 
+              placeholder="Kısa listede ara..." 
+              className="bg-[#0b0f19] border border-[#1e293b] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors w-64"
+            />
           </div>
-          <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 space-y-1">
-            <h4 className="text-xs font-bold text-cyan-400">Yöneticiden İşe Alım Kararı</h4>
-            <p className="text-[11px] text-slate-400">Tek tıkla adaya teklif mektubu veya red bildirimi gönderilmesi sağlanır.</p>
-          </div>
-        </div>
-
-        <div className="pt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
-          <Clock className="w-4 h-4 text-cyan-400" />
-          <span>Adaylarınızı şu an 'Gelen Başvurular' sekmesinde AI Uyum Skoru ile filtreleyebilirsiniz.</span>
+          <button className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-slate-200 px-4 py-2 rounded-xl text-sm font-medium transition-colors">
+            <Filter className="w-4 h-4" /> Filtrele
+          </button>
         </div>
       </div>
+
+      {/* Grid */}
+      {list.length === 0 ? (
+        <div className="bg-[#151c2f] border border-[#1e293b] rounded-2xl p-12 text-center flex flex-col items-center shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+            <Star className="w-8 h-8 text-amber-400 opacity-50" />
+          </div>
+          <h3 className="text-lg font-bold text-white mb-2">Kısa Listeniz Boş</h3>
+          <p className="text-slate-400 text-sm max-w-md mx-auto">
+            Adayları değerlendirip "Yöneticiye Öner" (Shortlist) statüsüne taşıdığınızda bu ekranda toplanacaklardır.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {list.map((app) => {
+            const candidate = app.candidates;
+            const job = app.jobs;
+            
+            return (
+              <div key={app.id} className="bg-[#151c2f] border border-[#1e293b] rounded-2xl overflow-hidden shadow-xl hover:border-amber-500/50 transition-all group hover:-translate-y-1">
+                <div className="h-20 bg-gradient-to-r from-[#0b0f19] to-[#1e293b] relative">
+                  <div className="absolute -bottom-8 left-6 w-16 h-16 rounded-full border-4 border-[#151c2f] bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center font-bold text-white text-xl shadow-lg">
+                    {candidate?.full_name?.charAt(0) || 'A'}
+                  </div>
+                  {app.status === 'hired' && (
+                    <span className="absolute top-4 right-4 bg-emerald-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shadow-lg">
+                      İşe Alındı
+                    </span>
+                  )}
+                </div>
+                
+                <div className="p-6 pt-10">
+                  <h3 className="text-lg font-bold text-white mb-1">
+                    {candidate?.full_name || 'İsimsiz Aday'}
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-medium mb-4">
+                    <Briefcase className="w-3.5 h-3.5" />
+                    {job?.title || 'Bilinmiyor'}
+                  </div>
+                  
+                  <div className="space-y-2 mb-6">
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span className="truncate">{candidate?.email || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <Phone className="w-3.5 h-3.5" />
+                      <span>{candidate?.phone || '-'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{new Date(app.created_at).toLocaleDateString('tr-TR')}</span>
+                    </div>
+                  </div>
+                  
+                  <button className="w-full py-2 bg-[#0b0f19] hover:bg-[#1e293b] border border-[#1e293b] rounded-xl text-xs font-semibold text-white transition-colors">
+                    Profili İncele
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
