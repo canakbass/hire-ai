@@ -110,11 +110,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         <div className="space-y-6">
           <div className="bg-[#151c2f] border border-[#1e293b] rounded-2xl p-6">
             <h3 className="text-sm font-bold text-white mb-4">Değerlendirme Kriterleri</h3>
-            {job.requirements ? (
-              <div className="prose prose-invert prose-sm text-slate-300" dangerouslySetInnerHTML={{ __html: job.requirements }} />
-            ) : (
-              <p className="text-xs text-slate-500">Spesifik bir kriter girilmemiş.</p>
-            )}
+            <p className="text-xs text-slate-500">Spesifik değerlendirme kriterleri (Job Settings) yakında entegre edilecektir.</p>
           </div>
           
           <div className="bg-gradient-to-b from-indigo-600/20 to-transparent border border-indigo-500/30 rounded-2xl p-6 text-center">
