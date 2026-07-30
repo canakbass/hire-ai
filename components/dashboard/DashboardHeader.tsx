@@ -1,8 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { Menu, Search, Bell } from 'lucide-react';
 import type { Database } from '@/lib/types/database.types';
 
 type OrgRow = Database['public']['Tables']['orgs']['Row'];
@@ -16,49 +14,67 @@ interface HeaderProps {
 }
 
 export default function DashboardHeader({
-  activeOrg,
+  user,
+  profile,
+  userRole,
 }: HeaderProps) {
-  const pathname = usePathname();
-
-  const titleMap: Record<string, string> = {
-    '/dashboard': 'Genel Bakış & İK Özeti',
-    '/dashboard/jobs': 'Pozisyon İlanları & Kriterler',
-    '/dashboard/applications': 'Gelen Başvurular & Aday Havuzu',
-    '/dashboard/candidates': 'Aday Havuzu & CV Skorları',
-    '/dashboard/interviews': 'Otonom AI Sesli Mülakatlar',
-    '/dashboard/shortlists': 'Yönetici Kısa Listeleri',
-    '/dashboard/settings': 'Çalışma Alanı ve Ekip Ayarları',
+  
+  const roleLabels: Record<string, string> = {
+    owner: 'Kurucu',
+    admin: 'Yönetici',
+    recruiter: 'İK Uzmanı',
+    viewer: 'Gözlemci'
   };
 
-  const currentTitle = titleMap[pathname] || 'Çalışma Alanı';
+  const displayRole = userRole ? roleLabels[userRole] : 'Kullanıcı';
+  const fullName = profile?.full_name || user?.email?.split('@')[0] || 'Kullanıcı';
+  const initials = fullName.substring(0, 2).toUpperCase();
 
   return (
-    <header className="h-16 border-b border-white/10 bg-[#0c0f17]/60 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
-      <div className="flex items-center gap-4">
-        <div>
-          <h1 className="text-sm font-semibold text-white">
-            {currentTitle}
-          </h1>
-          <p className="text-[11px] text-slate-400">
-            {activeOrg.name} çalışma alanı • <span className="text-emerald-400 font-medium">Sistem Aktif</span>
-          </p>
-        </div>
+    <header className="h-16 border-b border-[#1e293b] bg-[#0b0f19] px-6 flex items-center justify-between shrink-0 z-20">
+      {/* Left side */}
+      <div className="flex items-center">
+        <button className="text-slate-400 hover:text-white transition-colors">
+          <Menu className="w-5 h-5" />
+        </button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/80 border border-white/10 text-[11px] text-slate-300">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-medium">AI Engine:</span>
-          <span className="text-indigo-400">HireAI™ Otonom Motor</span>
+      {/* Right side */}
+      <div className="flex items-center gap-6">
+        
+        {/* Search Bar */}
+        <div className="relative hidden md:block">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-slate-500" />
+          </div>
+          <input 
+            type="text" 
+            placeholder="Aday, pozisyon ara..." 
+            className="block w-64 pl-10 pr-12 py-1.5 text-xs bg-[#151c2f] border border-[#1e293b] rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+          />
+          <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+            <span className="text-[10px] text-slate-500 bg-[#1e293b] px-1.5 py-0.5 rounded">⌘K</span>
+          </div>
         </div>
 
-        <Link
-          href="/dashboard/jobs/new"
-          className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-medium text-xs px-3.5 py-2 rounded-xl shadow-md glow-primary flex items-center gap-1.5 transition-all"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Yeni Pozisyon Aç</span>
-        </Link>
+        {/* Notification Bell */}
+        <button className="relative text-slate-400 hover:text-white transition-colors">
+          <Bell className="w-5 h-5" />
+          <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border-2 border-[#0b0f19]">
+            12
+          </span>
+        </button>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-3 pl-4 border-l border-[#1e293b]">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white shadow-lg">
+            {initials}
+          </div>
+          <div className="hidden sm:block text-left">
+            <p className="text-xs font-semibold text-slate-200">{fullName}</p>
+            <p className="text-[10px] text-slate-400">{displayRole}</p>
+          </div>
+        </div>
       </div>
     </header>
   );
