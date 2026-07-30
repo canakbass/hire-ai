@@ -103,13 +103,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <BarChart3 className="w-4 h-4 text-indigo-400" />
             Başvuru Trendi
           </h3>
-          <div className="h-64 flex items-end justify-between gap-2 px-2">
-            {[35, 45, 30, 60, 80, 50, 90, 75, 100, 85, 120, 95].map((val, i) => (
-              <div key={i} className="w-full flex flex-col items-center gap-2 group">
+          <div className="h-64 flex items-end justify-between gap-2 px-2 pb-2">
+            {[25, 35, 20, 50, 70, 40, 80, 65, 90, 75, 100, 85].map((val, i) => (
+              <div key={i} className="w-full h-full flex flex-col justify-end items-center gap-2 group">
                 <div className="w-full bg-[#1e293b] rounded-t-sm relative group-hover:bg-indigo-500/30 transition-colors" style={{ height: `${val}%` }}>
                   <div className="absolute inset-x-0 bottom-0 bg-indigo-500 rounded-t-sm transition-all" style={{ height: `${val * 0.6}%` }} />
                 </div>
-                <span className="text-[9px] text-slate-500 uppercase">{['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][i]}</span>
+                <span className="text-[9px] text-slate-500 uppercase shrink-0">{['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][i]}</span>
               </div>
             ))}
           </div>

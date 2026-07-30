@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   Sparkles, 
@@ -41,7 +42,13 @@ export default function CVAnalysisDrawer({
   candidateName,
   jobTitle,
 }: CVAnalysisDrawerProps) {
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const verdictConfig = {
     potential: {
@@ -65,8 +72,8 @@ export default function CVAnalysisDrawer({
     badgeBg: 'bg-purple-500 text-white',
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden animate-in fade-in duration-300">
+  const drawerContent = (
+    <div className="fixed inset-0 z-[9999] overflow-hidden animate-in fade-in duration-300" style={{ position: 'fixed' }}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
@@ -227,4 +234,6 @@ export default function CVAnalysisDrawer({
       </div>
     </div>
   );
+
+  return createPortal(drawerContent, document.body);
 }
