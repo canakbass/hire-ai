@@ -119,6 +119,9 @@ export default async function DashboardOverviewPage() {
 
   const isEmptyWorkspace = (jobsCount ?? 0) === 0 && (candidatesCount ?? 0) === 0;
 
+  return (
+    <div className="space-y-8 pb-12">
+
       <V2DashboardClient 
         stats={{
           totalApps: candidatesCount ?? 0,
