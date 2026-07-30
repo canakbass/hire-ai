@@ -40,8 +40,8 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             {job.title}
-            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${job.status === 'active' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-400'}`}>
-              {job.status === 'active' ? 'Aktif İlan' : 'Pasif İlan'}
+            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${job.status === 'published' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-400'}`}>
+              {job.status === 'published' ? 'Aktif İlan' : 'Pasif İlan'}
             </span>
           </h1>
           <div className="flex items-center gap-4 text-xs text-slate-400 mt-2">
