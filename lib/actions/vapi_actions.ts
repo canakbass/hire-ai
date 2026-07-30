@@ -12,7 +12,7 @@ const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 export async function startVoiceInterview(applicationId: string) {
   try {
     // 1. Check if Vapi ENV vars are set
-    const vapiApiKey = process.env.VAPI_PRIVATE_API_KEY;
+    const vapiApiKey = process.env.VAPI_API_KEY || process.env.VAPI_PRIVATE_API_KEY;
     const vapiAssistantId = process.env.VAPI_ASSISTANT_ID;
     const vapiPhoneNumberId = process.env.VAPI_PHONE_NUMBER_ID;
 
