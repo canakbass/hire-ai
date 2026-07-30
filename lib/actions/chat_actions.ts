@@ -76,7 +76,7 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
         const supabase = await createClient();
         const args = call.args as any;
         
-        const { error } = await supabase.from('jobs').insert({
+        const { data: insertedJob, error } = await supabase.from('jobs').insert({
           org_id: authData.activeOrg.id,
           title: args.title,
           department: args.department || 'Belirtilmedi',
@@ -87,25 +87,33 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
             : 'Detaylar daha sonra eklenecek.',
           status: 'draft',
           created_by: authData.user?.id
-        });
+        }).select().single();
 
         if (error) throw error;
+
+        if (insertedJob) {
+          await supabase.from('job_settings').insert({
+            job_id: insertedJob.id,
+            org_id: authData.activeOrg.id,
+            interview_enabled: true,
+            interview_language: 'tr-TR',
+            interview_max_minutes: 15,
+            pass_threshold: 65,
+            reject_threshold: 40,
+            shortlist_size: 10,
+            required_skills: [],
+            nice_to_have_skills: [],
+            require_manual_call_approval: false
+          });
+        }
 
         // Optionally revalidate the jobs page so the sidebar updates
         revalidatePath('/dashboard');
         revalidatePath('/dashboard/jobs');
 
-        const finalResult = await chat.sendMessage([{
-          functionResponse: {
-            name: 'create_job_posting',
-            response: { 
-              success: true, 
-              message: 'İlan başarıyla veritabanına Taslak (draft) olarak kaydedildi.' 
-            }
-          }
-        }]);
-        
-        return { text: finalResult.response.text() };
+        // Instead of sending functionResponse to model (which causes 400 Bad Request Role 'function' is not supported in some SDK versions)
+        // We just return the success message directly to the frontend.
+        return { text: `Tebrikler! **${args.title}** pozisyonu başarıyla "Taslak" olarak veritabanına eklendi.\n\nPozisyon yönetimi sayfasından ilanı düzenleyebilir, otonom sesli mülakat senaryolarını veya eleme kriterlerini detaylandırabilirsiniz.` };
       }
     }
 
