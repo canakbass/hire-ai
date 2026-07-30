@@ -25,31 +25,27 @@ interface SidebarProps {
   activeOrg: OrgRow;
   userRole: RoleEnum | null;
   allOrgs: (OrgRow & { role: RoleEnum })[];
+  jobs?: { id: string; title: string; status: string }[];
 }
 
 export default function DashboardSidebar({
   activeOrg,
+  jobs = []
 }: SidebarProps) {
   const pathname = usePathname();
 
   const navItems = [
     { label: 'Genel Bakış', href: '/dashboard', icon: Home, badge: null },
-    { label: 'Başvurular', href: '/dashboard/applications', icon: Users, badge: '423' },
+    { label: 'Başvurular', href: '/dashboard/applications', icon: Users, badge: null },
     { label: 'Aday Havuzu', href: '/dashboard/candidates', icon: UserSquare2, badge: null },
     { label: 'AI Mülakatlar', href: '/dashboard/interviews', icon: Mic, badge: null },
     { label: 'Değerlendirmeler', href: '/dashboard/evaluations', icon: SlidersHorizontal, badge: null },
-    { label: 'En İyi Adaylar', href: '/dashboard/shortlists', icon: Star, badge: '5' },
+    { label: 'En İyi Adaylar', href: '/dashboard/shortlists', icon: Star, badge: null },
     { label: 'Raporlar', href: '/dashboard/reports', icon: BarChart3, badge: null },
     { label: 'Ayarlar', href: '/dashboard/settings', icon: Settings, badge: null },
   ];
 
-  const positions = [
-    { label: 'Yazılım Geliştirici', count: '156' },
-    { label: 'Satış Uzmanı', count: '98' },
-    { label: 'Dijital Pazarlama Uzmanı', count: '65' },
-    { label: 'Ürün Yöneticisi', count: '38' },
-    { label: 'Tasarımcı', count: '32' },
-  ];
+  const activeJobs = jobs.filter(j => j.status === 'published' || j.status === 'active' || j.status === 'draft');
 
   return (
     <aside className="w-64 border-r border-[#1e293b] bg-[#0b0f19] flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
@@ -99,20 +95,28 @@ export default function DashboardSidebar({
 
       {/* Positions Section */}
       <div className="px-3 mt-8">
-        <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-          POZİSYONLAR
+        <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 flex justify-between items-center">
+          <span>AKTİF POZİSYONLAR ({activeJobs.length})</span>
         </div>
         <div className="space-y-1">
-          {positions.map((pos, idx) => (
-            <Link
-              key={idx}
-              href={`/dashboard/jobs/${idx}`}
-              className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors"
-            >
-              <span className="tracking-wide truncate pr-2">{pos.label}</span>
-              <span className="text-[10px] text-slate-500">{pos.count}</span>
-            </Link>
-          ))}
+          {activeJobs.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-slate-500 italic">
+              Henüz ilanınız bulunmuyor.
+            </div>
+          ) : (
+            activeJobs.slice(0, 5).map((pos) => (
+              <Link
+                key={pos.id}
+                href={`/dashboard/jobs/${pos.id}`}
+                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors"
+              >
+                <span className="tracking-wide truncate pr-2">{pos.title}</span>
+                {pos.status === 'draft' && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Taslak</span>
+                )}
+              </Link>
+            ))
+          )}
         </div>
       </div>
 
@@ -123,12 +127,9 @@ export default function DashboardSidebar({
             <Bot className="w-5 h-5" />
           </div>
           <h4 className="text-sm font-bold text-slate-200 mb-1">AI Asistan</h4>
-          <p className="text-[10px] text-slate-400 mb-4 leading-relaxed">
-            Size nasıl yardımcı olabilirim?
+          <p className="text-[10px] text-slate-400 leading-relaxed">
+            Şu an entegrasyon aşamasında. Çok yakında sizinle sohbet etmeye başlayacak!
           </p>
-          <button className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-indigo-600/20">
-            Sohbeti Başlat
-          </button>
         </div>
       </div>
     </aside>

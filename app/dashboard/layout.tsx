@@ -18,6 +18,14 @@ export default async function DashboardLayout({
     redirect('/onboarding');
   }
 
+  const { createClient } = await import('@/lib/supabase/server');
+  const supabase = await createClient();
+  const { data: jobs } = await supabase
+    .from('jobs')
+    .select('id, title, status')
+    .eq('org_id', data.activeOrg.id)
+    .order('created_at', { ascending: false });
+
   return (
     <div className="flex h-screen bg-[#090b10] text-[#f3f4f6] overflow-hidden">
       <DashboardSidebar
@@ -26,6 +34,7 @@ export default async function DashboardLayout({
         activeOrg={data.activeOrg}
         userRole={data.userRole}
         allOrgs={data.allOrgs}
+        jobs={jobs || []}
       />
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
