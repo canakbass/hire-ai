@@ -60,9 +60,6 @@ export default function DashboardHeader({
         {/* Notification Bell */}
         <button className="relative text-slate-400 hover:text-white transition-colors">
           <Bell className="w-5 h-5" />
-          <span className="absolute -top-1.5 -right-1.5 bg-indigo-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border-2 border-[#0b0f19]">
-            12
-          </span>
         </button>
 
         {/* User Profile */}

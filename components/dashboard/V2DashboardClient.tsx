@@ -345,12 +345,25 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                     <div>
                       <h4 className="text-sm font-bold text-white flex items-center gap-2">
                         {selectedCandidate.candidates?.full_name || 'Bilinmeyen Aday'}
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">AI Önerisi: Yüksek</span>
+                        {selectedCandidate.cv_analyses?.[0]?.match_score ? (
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                            selectedCandidate.cv_analyses[0].match_score >= 80 
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' 
+                              : selectedCandidate.cv_analyses[0].match_score >= 50
+                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/20'
+                              : 'bg-red-500/20 text-red-400 border-red-500/20'
+                          }`}>
+                            AI Skoru: {selectedCandidate.cv_analyses[0].match_score}
+                          </span>
+                        ) : null}
                       </h4>
                       <p className="text-[11px] text-slate-400">{selectedCandidate.jobs?.title}</p>
                     </div>
                   </div>
-                  <button className="text-[10px] px-2 py-1 bg-white/5 hover:bg-white/10 rounded border border-white/10 text-slate-300 flex items-center gap-1 transition-colors">
+                  <button 
+                    onClick={() => router.push(`/dashboard/applications/${selectedCandidate.id}`)}
+                    className="text-[10px] px-2 py-1 bg-white/5 hover:bg-white/10 rounded border border-white/10 text-slate-300 flex items-center gap-1 transition-colors"
+                  >
                     <Search className="w-3 h-3" /> Profili Görüntüle
                   </button>
                 </div>
@@ -369,17 +382,6 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
               </div>
 
               <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-5">
-                {selectedCandidate.status === 'new' || selectedCandidate.status === 'analyzing' ? (
-                  <div className="flex flex-col items-center justify-center text-center h-full text-slate-500 space-y-3">
-                    <BrainCircuit className="w-10 h-10 opacity-50 text-indigo-400" />
-                    <div>
-                      <p className="text-sm font-bold text-white mb-1">Aday Henüz Analiz Edilmedi</p>
-                      <p className="text-[10px] text-slate-400 max-w-xs mx-auto">
-                        HireAI otonom motoru bu adayın CV'sini değerlendiriyor veya aday henüz değerlendirme sırasına girmedi.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
                   <>
                     {/* CV Analiz Sonucu */}
                     {activeTab === 'AI Analiz' && (
@@ -481,7 +483,6 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                       </div>
                     )}
                   </>
-                )}
               </div>
 
               <div className="p-4 border-t border-[#1e293b] flex gap-3">

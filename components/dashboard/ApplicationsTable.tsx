@@ -20,7 +20,8 @@ import {
   Mail,
   Calendar,
   Sparkles,
-  Filter
+  Filter,
+  Star
 } from 'lucide-react';
 
 interface AnalysisItem {
@@ -160,6 +161,17 @@ export default function ApplicationsTable({
       supabase.removeChannel(channel);
     };
   }, [activeOrgId, router]);
+
+  const handleUpdateStatus = async (applicationId: string, status: 'shortlisted' | 'irrelevant' | 'rejected') => {
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('applications').update({ status }).eq('id', applicationId);
+      if (error) throw error;
+      router.refresh();
+    } catch (err: any) {
+      alert('Durum güncellenirken hata oluştu: ' + err.message);
+    }
+  };
 
   const handleDownloadCv = async (applicationId: string, cvStoragePath: string | null) => {
     if (!cvStoragePath) {
@@ -422,7 +434,27 @@ export default function ApplicationsTable({
                           ) : (
                             <Download className="w-3.5 h-3.5" />
                           )}
-                          <span>CV (60sn)</span>
+                          <span>CV</span>
+                        </button>
+                      )}
+                      {app.status !== 'shortlisted' && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateStatus(app.id, 'shortlisted')}
+                          className="px-3 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 font-semibold text-xs inline-flex items-center gap-1.5 transition-all"
+                          title="Yöneticiye Öner"
+                        >
+                          <Star className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {app.status !== 'irrelevant' && app.status !== 'rejected' && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateStatus(app.id, 'irrelevant')}
+                          className="px-3 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 text-red-300 border border-red-500/30 font-semibold text-xs inline-flex items-center gap-1.5 transition-all"
+                          title="Alakasız İşaretle"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </td>
