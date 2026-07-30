@@ -4,15 +4,23 @@ import { Users, Search, Filter } from 'lucide-react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-export default async function CandidatesPage() {
+export default async function CandidatesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const supabase = await createClient();
   
   // Sadece yetkili org'un adaylarını alıyoruz.
   // Şu an demo olduğu için tüm candidate'leri unique olarak çekelim.
-  const { data: candidates, error } = await supabase
+  let query = supabase
     .from('candidates')
     .select('*')
     .order('created_at', { ascending: false });
+
+  const params = await searchParams;
+  if (params.q) {
+    const q = params.q;
+    query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
+  }
+
+  const { data: candidates, error } = await query;
 
   if (error) {
     console.error('Error fetching candidates:', error);
@@ -27,15 +35,15 @@ export default async function CandidatesPage() {
           </h1>
           <p className="text-sm text-slate-400 mt-1">Sisteme kayıtlı tüm tekil adayların listesi</p>
         </div>
-        <div className="flex gap-2">
+        <form className="flex gap-2">
            <div className="relative">
              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-             <input type="text" placeholder="Aday ara..." className="bg-[#151c2f] border border-[#1e293b] text-sm text-white rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 w-64" />
+             <input type="text" name="q" defaultValue={params.q || ''} placeholder="Aday ara..." className="bg-[#151c2f] border border-[#1e293b] text-sm text-white rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 w-64" />
            </div>
-           <button className="bg-[#151c2f] border border-[#1e293b] text-slate-300 p-2 rounded-xl hover:text-white transition-colors">
+           <button type="submit" className="bg-[#151c2f] border border-[#1e293b] text-slate-300 p-2 rounded-xl hover:text-white transition-colors">
              <Filter className="w-5 h-5" />
            </button>
-        </div>
+        </form>
       </div>
 
       <div className="bg-[#151c2f] border border-[#1e293b] rounded-2xl overflow-hidden">

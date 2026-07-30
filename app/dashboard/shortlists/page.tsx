@@ -5,7 +5,7 @@ import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
 import { redirect } from 'next/navigation';
 import { Star, Search, Filter, Briefcase, Mail, Phone, Calendar } from 'lucide-react';
 
-export default async function ShortlistsPage({ searchParams }: { searchParams: { q?: string } }) {
+export default async function ShortlistsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const authData = await getCurrentUserAndOrg();
   if (!authData || !authData.activeOrg) {
     redirect('/login');
@@ -29,8 +29,9 @@ export default async function ShortlistsPage({ searchParams }: { searchParams: {
   }
 
   let list = shortlistedApps || [];
-  if (searchParams.q) {
-    const q = searchParams.q.toLowerCase();
+  const params = await searchParams;
+  if (params.q) {
+    const q = params.q.toLowerCase();
     list = list.filter(app => 
       app.candidates?.full_name?.toLowerCase().includes(q) || 
       app.jobs?.title?.toLowerCase().includes(q)
@@ -56,7 +57,7 @@ export default async function ShortlistsPage({ searchParams }: { searchParams: {
             <input 
               name="q"
               type="text" 
-              defaultValue={searchParams.q || ''}
+              defaultValue={params.q || ''}
               placeholder="Kısa listede ara..." 
               className="bg-[#0b0f19] border border-[#1e293b] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors w-64"
             />

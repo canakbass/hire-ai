@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import { PhoneCall, Play, Clock, CheckCircle2, XCircle, Search, Filter } from 'lucide-react';
 import Link from 'next/link';
 
-export default async function InterviewsPage({ searchParams }: { searchParams: { q?: string } }) {
+export default async function InterviewsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const authData = await getCurrentUserAndOrg();
   if (!authData || !authData.activeOrg) {
     redirect('/login');
@@ -37,8 +37,9 @@ export default async function InterviewsPage({ searchParams }: { searchParams: {
   }
 
   let interviewList = interviews || [];
-  if (searchParams.q) {
-    const q = searchParams.q.toLowerCase();
+  const params = await searchParams;
+  if (params.q) {
+    const q = params.q.toLowerCase();
     interviewList = interviewList.filter(interview => {
       const app = Array.isArray(interview.applications) ? interview.applications[0] : interview.applications;
       return app?.candidates?.full_name?.toLowerCase().includes(q) || 
@@ -66,7 +67,7 @@ export default async function InterviewsPage({ searchParams }: { searchParams: {
             <input 
               name="q"
               type="text" 
-              defaultValue={searchParams.q || ''}
+              defaultValue={params.q || ''}
               placeholder="Aday veya pozisyon ara..." 
               className="bg-[#0b0f19] border border-[#1e293b] text-white text-sm rounded-xl pl-9 pr-4 py-2 focus:outline-none focus:border-indigo-500 transition-colors w-64"
             />

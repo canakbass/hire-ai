@@ -41,6 +41,7 @@ type AppStatus = Database['public']['Enums']['app_status'];
 export default function V2DashboardClient({ stats, recentApps }: V2DashboardClientProps) {
   const [selectedCandidate, setSelectedCandidate] = useState(recentApps[0] || null);
   const [activeTab, setActiveTab] = useState('AI Analiz');
+  const [filterTab, setFilterTab] = useState('Tümü');
   const [isUpdating, setIsUpdating] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
   const router = useRouter();
@@ -222,7 +223,8 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
               {['Tümü', 'Analiz Edilen', 'Potansiyel', 'Mülakat', 'Önerilen'].map((t, i) => (
                 <button 
                   key={t}
-                  className={`pb-2 text-xs font-medium transition-colors border-b-2 ${i === 0 ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
+                  onClick={() => setFilterTab(t)}
+                  className={`pb-2 text-xs font-medium transition-colors border-b-2 ${filterTab === t ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
                 >
                   {t} <span className="ml-1 text-[10px] bg-white/5 px-1.5 rounded">{i===0 ? stats.totalApps : i===1 ? stats.aiAnalyzed : i===2 ? stats.potential : i===3 ? stats.interviewed : stats.recommended}</span>
                 </button>
@@ -242,7 +244,14 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e293b] text-xs">
-                {recentApps.map((app) => {
+                {recentApps.filter(app => {
+                  if (filterTab === 'Tümü') return true;
+                  if (filterTab === 'Analiz Edilen') return app.cv_analyses && app.cv_analyses.length > 0;
+                  if (filterTab === 'Potansiyel') return app.status === 'potential' || app.status === 'shortlisted';
+                  if (filterTab === 'Mülakat') return app.status === 'interviewed' || app.status === 'interview_pending';
+                  if (filterTab === 'Önerilen') return app.status === 'shortlisted';
+                  return true;
+                }).map((app) => {
                   const candidateName = app.candidates?.full_name || app.candidates?.email || 'Bilinmeyen Aday';
                   const jobTitle = app.jobs?.title || 'Pozisyon';
                   const isSelected = selectedCandidate?.id === app.id;

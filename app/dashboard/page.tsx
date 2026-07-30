@@ -67,7 +67,7 @@ export default async function DashboardOverviewPage() {
       .select('id, status, created_at, job_id, jobs(title), candidates(full_name, email, phone), cv_analyses(match_score, verdict, extracted)')
       .eq('org_id', activeOrg.id)
       .order('created_at', { ascending: false })
-      .limit(5)
+      .limit(50)
   ]);
 
   return (
