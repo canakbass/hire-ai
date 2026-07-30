@@ -14,7 +14,9 @@ import {
   Settings,
   Bot
 } from 'lucide-react';
+import { useState } from 'react';
 import type { Database } from '@/lib/types/database.types';
+import AIAssistantChat from './AIAssistantChat';
 
 type OrgRow = Database['public']['Tables']['orgs']['Row'];
 type RoleEnum = Database['public']['Enums']['app_role'];
@@ -33,6 +35,7 @@ export default function DashboardSidebar({
   jobs = []
 }: SidebarProps) {
   const pathname = usePathname();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const navItems = [
     { label: 'Genel Bakış', href: '/dashboard', icon: Home, badge: null },
@@ -121,17 +124,22 @@ export default function DashboardSidebar({
       </div>
 
       <div className="mt-auto p-4 shrink-0">
-        <div className="bg-gradient-to-b from-[#151c2f] to-[#0f1423] border border-indigo-500/20 rounded-2xl p-4 flex flex-col items-center text-center shadow-xl relative overflow-hidden group">
+        <button 
+          onClick={() => setIsChatOpen(true)}
+          className="w-full bg-gradient-to-b from-[#151c2f] to-[#0f1423] border border-indigo-500/20 rounded-2xl p-4 flex flex-col items-center text-center shadow-xl relative overflow-hidden group transition-transform hover:scale-[1.02]"
+        >
           <div className="absolute top-0 left-0 w-full h-full bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+          <div className="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-3 shadow-[0_0_15px_rgba(99,102,241,0.2)] group-hover:scale-110 transition-transform">
             <Bot className="w-5 h-5" />
           </div>
-          <h4 className="text-sm font-bold text-slate-200 mb-1">AI Asistan</h4>
+          <h4 className="text-sm font-bold text-slate-200 mb-1">AI Asistan ile Sohbet</h4>
           <p className="text-[10px] text-slate-400 leading-relaxed">
-            Şu an entegrasyon aşamasında. Çok yakında sizinle sohbet etmeye başlayacak!
+            Gemini destekli İK asistanınızla konuşmak için tıklayın.
           </p>
-        </div>
+        </button>
       </div>
+
+      <AIAssistantChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </aside>
   );
 }

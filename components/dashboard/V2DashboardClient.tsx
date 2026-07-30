@@ -28,8 +28,24 @@ interface V2DashboardClientProps {
   recentApps: any[];
 }
 
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
+
 export default function V2DashboardClient({ stats, recentApps }: V2DashboardClientProps) {
   const [selectedCandidate, setSelectedCandidate] = useState(recentApps[0] || null);
+  const [activeTab, setActiveTab] = useState('AI Analiz');
+  const [isUpdating, setIsUpdating] = useState(false);
+  const router = useRouter();
+
+  const handleUpdateStatus = async (status: string) => {
+    if (!selectedCandidate) return;
+    setIsUpdating(true);
+    const supabase = createClient();
+    await supabase.from('applications').update({ status }).eq('id', selectedCandidate.id);
+    setSelectedCandidate({ ...selectedCandidate, status });
+    setIsUpdating(false);
+    router.refresh();
+  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -319,10 +335,11 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                 </div>
                 
                 <div className="flex gap-4">
-                  {['AI Analiz', 'Mülakat Özeti', 'Değerlendirme', 'Notlar'].map((t, i) => (
+                  {['AI Analiz', 'Mülakat Özeti', 'Değerlendirme', 'Notlar'].map((t) => (
                     <button 
                       key={t}
-                      className={`pb-2 text-[11px] font-semibold transition-colors border-b-2 ${i === 1 ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+                      onClick={() => setActiveTab(t)}
+                      className={`pb-2 text-[11px] font-semibold transition-colors border-b-2 ${activeTab === t ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
                     >
                       {t}
                     </button>
@@ -344,76 +361,94 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                 ) : (
                   <>
                     {/* CV Analiz Sonucu */}
-                    <div className="bg-[#0b0f19] border border-[#1e293b] rounded-xl p-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <h5 className="text-[11px] font-bold text-white">HireAI CV Analizi</h5>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-400 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Analiz Edildi
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div>
-                          <h6 className="text-[10px] text-slate-500 font-semibold mb-1">Değerlendirme (Özet)</h6>
-                          <p className="text-[11px] text-slate-300 leading-relaxed">
-                            {selectedCandidate.analysis?.verdict || 'Bu aday için detaylı analiz sonucu bulunmuyor.'}
-                          </p>
-                        </div>
-
-                        {selectedCandidate.analysis?.extracted?.skills && (
-                          <div>
-                            <h6 className="text-[10px] text-slate-500 font-semibold mb-1.5">Tespit Edilen Yetenekler</h6>
-                            <div className="flex flex-wrap gap-1">
-                              {selectedCandidate.analysis.extracted.skills.map((s: string, idx: number) => (
-                                <span key={idx} className="text-[9px] px-1.5 py-0.5 bg-[#151c2f] border border-[#1e293b] text-slate-400 rounded">
-                                  {s}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#1e293b]">
-                        <span className="text-[10px] text-slate-500">CV Uygunluk Skoru</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-indigo-400">%{selectedCandidate.analysis?.score || 0}</span>
-                          <div className="w-16 h-1.5 bg-[#151c2f] rounded-full overflow-hidden">
-                            <div className="h-full bg-indigo-500" style={{width: `${selectedCandidate.analysis?.score || 0}%`}} />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AI Mülakat Sonucu */}
-                    {selectedCandidate.status === 'interviewed' || selectedCandidate.status === 'shortlisted' ? (
+                    {activeTab === 'AI Analiz' && (
                       <div className="bg-[#0b0f19] border border-[#1e293b] rounded-xl p-4">
                         <div className="flex justify-between items-center mb-3">
-                          <h5 className="text-[11px] font-bold text-white">AI Voice Mülakat Sonucu</h5>
-                          <span className="text-[9px] text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                            <CheckCircle2 className="w-3 h-3" /> Tamamlandı
+                          <h5 className="text-[11px] font-bold text-white">HireAI CV Analizi</h5>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 text-blue-400 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Analiz Edildi
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 mb-4">
-                          <button className="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20">
-                            <Play className="w-3 h-3 ml-0.5" />
-                          </button>
-                          <div className="flex-1 flex gap-0.5 items-end h-6">
-                            {Array.from({length: 40}).map((_, i) => (
-                              <div key={i} className="flex-1 bg-indigo-500/50 rounded-full" style={{ height: `${Math.max(20, Math.random() * 100)}%` }} />
-                            ))}
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <h6 className="text-[10px] text-slate-500 font-semibold mb-1">Değerlendirme (Özet)</h6>
+                            <p className="text-[11px] text-slate-300 leading-relaxed">
+                              {selectedCandidate.analysis?.verdict || 'Bu aday için detaylı analiz sonucu bulunmuyor.'}
+                            </p>
                           </div>
-                          <span className="text-[10px] font-mono text-slate-400">24:36</span>
+
+                          {selectedCandidate.analysis?.extracted?.skills && (
+                            <div>
+                              <h6 className="text-[10px] text-slate-500 font-semibold mb-1.5">Tespit Edilen Yetenekler</h6>
+                              <div className="flex flex-wrap gap-1">
+                                {selectedCandidate.analysis.extracted.skills.map((s: string, idx: number) => (
+                                  <span key={idx} className="text-[9px] px-1.5 py-0.5 bg-[#151c2f] border border-[#1e293b] text-slate-400 rounded">
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <p className="text-[11px] text-slate-300 italic">
-                          "Gerçek mülakat analiz verileri (Vapi üzerinden) çok yakında buraya entegre edilecek."
-                        </p>
+
+                        <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#1e293b]">
+                          <span className="text-[10px] text-slate-500">CV Uygunluk Skoru</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-indigo-400">%{selectedCandidate.analysis?.score || 0}</span>
+                            <div className="w-16 h-1.5 bg-[#151c2f] rounded-full overflow-hidden">
+                              <div className="h-full bg-indigo-500" style={{width: `${selectedCandidate.analysis?.score || 0}%`}} />
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    ) : (
+                    )}
+
+                    {/* AI Mülakat Sonucu */}
+                    {activeTab === 'Mülakat Özeti' && (
+                      selectedCandidate.status === 'interviewed' || selectedCandidate.status === 'shortlisted' ? (
+                        <div className="bg-[#0b0f19] border border-[#1e293b] rounded-xl p-4">
+                          <div className="flex justify-between items-center mb-3">
+                            <h5 className="text-[11px] font-bold text-white">AI Voice Mülakat Sonucu</h5>
+                            <span className="text-[9px] text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                              <CheckCircle2 className="w-3 h-3" /> Tamamlandı
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mb-4">
+                            <button className="w-8 h-8 rounded-full bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20">
+                              <Play className="w-3 h-3 ml-0.5" />
+                            </button>
+                            <div className="flex-1 flex gap-0.5 items-end h-6">
+                              {Array.from({length: 40}).map((_, i) => (
+                                <div key={i} className="flex-1 bg-indigo-500/50 rounded-full" style={{ height: `${Math.max(20, Math.random() * 100)}%` }} />
+                              ))}
+                            </div>
+                            <span className="text-[10px] font-mono text-slate-400">24:36</span>
+                          </div>
+                          <p className="text-[11px] text-slate-300 italic">
+                            "Gerçek mülakat analiz verileri (Vapi üzerinden) çok yakında buraya entegre edilecek."
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-[#0b0f19] border border-[#1e293b] border-dashed rounded-xl p-6 text-center">
+                          <Mic className="w-6 h-6 text-slate-600 mx-auto mb-2" />
+                          <p className="text-xs font-semibold text-slate-400 mb-1">AI Mülakatı Bekleniyor</p>
+                          <p className="text-[10px] text-slate-500">Aday henüz otonom sesli mülakata girmedi veya mülakat aşamasına geçemedi.</p>
+                        </div>
+                      )
+                    )}
+                    
+                    {activeTab === 'Değerlendirme' && (
                       <div className="bg-[#0b0f19] border border-[#1e293b] border-dashed rounded-xl p-6 text-center">
-                        <Mic className="w-6 h-6 text-slate-600 mx-auto mb-2" />
-                        <p className="text-xs font-semibold text-slate-400 mb-1">AI Mülakatı Bekleniyor</p>
-                        <p className="text-[10px] text-slate-500">Aday henüz otonom sesli mülakata girmedi veya mülakat aşamasına geçemedi.</p>
+                        <p className="text-xs font-semibold text-slate-400 mb-1">Henüz Değerlendirilmedi</p>
+                        <p className="text-[10px] text-slate-500">Detaylı mülakat değerlendirme kartı (Scorecard) mülakat sonrası oluşturulacaktır.</p>
+                      </div>
+                    )}
+                    
+                    {activeTab === 'Notlar' && (
+                      <div className="bg-[#0b0f19] border border-[#1e293b] border-dashed rounded-xl p-6 text-center">
+                        <p className="text-xs font-semibold text-slate-400 mb-1">Aday Notu Bulunmuyor</p>
+                        <p className="text-[10px] text-slate-500">Bu aday için henüz bir not eklenmedi.</p>
                       </div>
                     )}
                   </>
@@ -421,10 +456,18 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
               </div>
 
               <div className="p-4 border-t border-[#1e293b] flex gap-3">
-                <button className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-1.5">
+                <button 
+                  disabled={isUpdating}
+                  onClick={() => handleUpdateStatus('shortlisted')}
+                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
                   <Star className="w-4 h-4" /> Yöneticiye Öner
                 </button>
-                <button className="flex-1 py-2 bg-transparent hover:bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                <button 
+                  disabled={isUpdating}
+                  onClick={() => handleUpdateStatus('rejected')}
+                  className="flex-1 py-2 bg-transparent hover:bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
                   <XCircle className="w-4 h-4" /> Reddet
                 </button>
               </div>
