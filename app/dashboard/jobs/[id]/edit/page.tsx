@@ -5,6 +5,7 @@ import { ArrowLeft, Sparkles, Briefcase } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
 import JobForm from '@/components/dashboard/JobForm';
+import CloseJobButton from '@/components/dashboard/CloseJobButton';
 
 interface EditJobPageProps {
   params: Promise<{ id: string }>;
@@ -47,6 +48,9 @@ export default async function EditJobPage({ params }: EditJobPageProps) {
           <p className="text-slate-400 text-xs">
             Pozisyon bilgilerini ve AI eleme / mülakat kriterlerini güncelleyin.
           </p>
+        </div>
+        <div className="ml-auto">
+          <CloseJobButton jobId={job.id} currentStatus={job.status || 'draft'} />
         </div>
       </div>
 

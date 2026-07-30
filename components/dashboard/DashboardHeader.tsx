@@ -1,6 +1,8 @@
 'use client';
 
-import { Menu, Search, Bell } from 'lucide-react';
+import { useState } from 'react';
+import { Menu, Search, Bell, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 import type { Database } from '@/lib/types/database.types';
 
 type OrgRow = Database['public']['Tables']['orgs']['Row'];
@@ -19,6 +21,8 @@ export default function DashboardHeader({
   userRole,
 }: HeaderProps) {
   
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
   const roleLabels: Record<string, string> = {
     owner: 'Kurucu',
     admin: 'Yönetici',
@@ -64,12 +68,39 @@ export default function DashboardHeader({
         </div>
 
         {/* Notification Bell */}
-        <button 
-          onClick={() => alert('Şu anda yeni bir bildiriminiz bulunmuyor.')}
-          className="relative text-slate-400 hover:text-white transition-colors p-1"
-        >
-          <Bell className="w-5 h-5" />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+            className="relative text-slate-400 hover:text-white transition-colors p-1"
+          >
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-0 right-0 w-2 h-2 bg-indigo-500 rounded-full border border-[#0b0f19]"></span>
+          </button>
+          
+          {isNotificationsOpen && (
+            <div className="absolute right-0 mt-3 w-80 bg-[#151c2f] border border-[#1e293b] rounded-2xl shadow-2xl py-2 z-50">
+              <div className="px-4 py-2 border-b border-[#1e293b] flex justify-between items-center">
+                <h3 className="text-sm font-bold text-white">Bildirimler</h3>
+                <span className="text-[10px] text-indigo-400 font-medium cursor-pointer hover:text-indigo-300">Tümünü okundu işaretle</span>
+              </div>
+              <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                {/* Dummy Notification Item */}
+                <div className="px-4 py-3 border-b border-[#1e293b]/50 hover:bg-[#1e293b]/30 transition-colors cursor-pointer flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-200"><span className="font-semibold text-white">Sisteme hoş geldiniz!</span> HireAI ile işe alım süreçlerinizi otonomlaştırın.</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Az önce</p>
+                  </div>
+                </div>
+              </div>
+              <div className="px-4 py-2 border-t border-[#1e293b] text-center">
+                <Link href="#" className="text-xs text-slate-400 hover:text-white transition-colors">Tüm bildirimleri gör</Link>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* User Profile */}
         <div className="flex items-center gap-3 pl-4 border-l border-[#1e293b]">
