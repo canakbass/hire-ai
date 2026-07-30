@@ -26,6 +26,7 @@ interface V2DashboardClientProps {
     aiAnalyzed: number;
     potential: number;
     recommended: number;
+    interviewed: number;
   };
   recentApps: any[];
 }
@@ -98,9 +99,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
           </div>
           <div className="mt-4">
             <h3 className="text-3xl font-bold text-white">{stats.totalApps}</h3>
-            <p className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> %12 bu hafta
-            </p>
+            <p className="text-[10px] text-slate-500 mt-1">Sistemdeki toplam aday</p>
           </div>
         </div>
 
@@ -110,16 +109,16 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
             <div className="relative">
               <svg className="w-10 h-10 transform -rotate-90">
                 <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="3" fill="transparent" className="text-slate-800" />
-                <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="3" fill="transparent" strokeDasharray="100" strokeDashoffset="8" className="text-indigo-500" />
+                <circle cx="20" cy="20" r="16" stroke="currentColor" strokeWidth="3" fill="transparent" strokeDasharray="100" strokeDashoffset={stats.totalApps > 0 ? 100 - ((stats.aiAnalyzed / stats.totalApps) * 100) : 100} className="text-indigo-500" />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white">%92</span>
+              <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-white">
+                {stats.totalApps > 0 ? Math.round((stats.aiAnalyzed / stats.totalApps) * 100) : 0}%
+              </span>
             </div>
           </div>
           <div className="mt-4">
             <h3 className="text-3xl font-bold text-white">{stats.aiAnalyzed}</h3>
-            <p className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> %18 bu hafta
-            </p>
+            <p className="text-[10px] text-slate-500 mt-1">Özgeçmiş işlendi</p>
           </div>
         </div>
 
@@ -132,9 +131,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
           </div>
           <div className="mt-4">
             <h3 className="text-3xl font-bold text-white">{stats.potential}</h3>
-            <p className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> %15 bu hafta
-            </p>
+            <p className="text-[10px] text-slate-500 mt-1">Gereksinimleri karşılıyor</p>
           </div>
         </div>
 
@@ -147,7 +144,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
           </div>
           <div className="mt-4">
             <h3 className="text-3xl font-bold text-white">{stats.recommended}</h3>
-            <p className="text-[10px] text-slate-500 mt-1">Bu hafta</p>
+            <p className="text-[10px] text-slate-500 mt-1">Kısa listeye alındı</p>
           </div>
         </div>
       </div>
@@ -196,7 +193,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
             </div>
             <div>
               <p className="text-xs font-bold text-white">AI Voice Mülakat</p>
-              <p className="text-[10px] text-slate-400">45</p>
+              <p className="text-[10px] text-slate-400">{stats.interviewed}</p>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-slate-600 shrink-0" />
@@ -227,7 +224,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                   key={t}
                   className={`pb-2 text-xs font-medium transition-colors border-b-2 ${i === 0 ? 'border-indigo-500 text-indigo-400' : 'border-transparent text-slate-400 hover:text-slate-300'}`}
                 >
-                  {t} <span className="ml-1 text-[10px] bg-white/5 px-1.5 rounded">{i===0 ? stats.totalApps : i===1 ? stats.aiAnalyzed : i===2 ? stats.potential : i===3 ? 45 : stats.recommended}</span>
+                  {t} <span className="ml-1 text-[10px] bg-white/5 px-1.5 rounded">{i===0 ? stats.totalApps : i===1 ? stats.aiAnalyzed : i===2 ? stats.potential : i===3 ? stats.interviewed : stats.recommended}</span>
                 </button>
               ))}
             </div>
@@ -256,32 +253,34 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                   let statusBg = "";
                   let statusTextCol = "";
 
+                  const dbScore = app.cv_analyses?.[0]?.match_score;
+                  if (dbScore !== undefined && dbScore !== null) {
+                    score = dbScore;
+                  } else {
+                    score = 0;
+                  }
+
                   if (app.status === 'shortlisted' || app.status === 'potential') {
-                    score = 88;
                     color = "bg-emerald-500";
                     statusText = "Potansiyel";
                     statusBg = "bg-emerald-500/10 border-emerald-500/20";
                     statusTextCol = "text-emerald-400";
                   } else if (app.status === 'interviewed' || app.status === 'interview_pending') {
-                    score = 92;
                     color = "bg-indigo-500";
                     statusText = "Mülakat Tamamlandı";
                     statusBg = "bg-indigo-500/10 border-indigo-500/20";
                     statusTextCol = "text-indigo-400";
                   } else if (app.status === 'analyzed') {
-                    score = 71;
                     color = "bg-blue-500";
                     statusText = "Analiz Edildi";
                     statusBg = "bg-blue-500/10 border-blue-500/20";
                     statusTextCol = "text-blue-400";
                   } else if (app.status === 'irrelevant' || app.status === 'rejected') {
-                    score = 45;
                     color = "bg-red-500";
                     statusText = "Alakasız";
                     statusBg = "bg-red-500/10 border-red-500/20";
                     statusTextCol = "text-red-400";
                   } else {
-                    score = 0;
                     color = "bg-slate-500";
                     statusText = "Yeni";
                     statusBg = "bg-slate-500/10 border-slate-500/20";
@@ -396,7 +395,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                           <div>
                             <h6 className="text-[10px] text-slate-500 font-semibold mb-1">Değerlendirme (Özet)</h6>
                             <p className="text-[11px] text-slate-300 leading-relaxed">
-                              {selectedCandidate.analysis?.verdict || 'Bu aday için detaylı analiz sonucu bulunmuyor.'}
+                              {selectedCandidate.cv_analyses?.[0]?.verdict || 'Bu aday için detaylı analiz sonucu bulunmuyor. AI analizinin tetiklenmesi veya tamamlanması bekleniyor.'}
                             </p>
                           </div>
 
@@ -417,9 +416,9 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
                         <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#1e293b]">
                           <span className="text-[10px] text-slate-500">CV Uygunluk Skoru</span>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-indigo-400">%{selectedCandidate.analysis?.score || 0}</span>
+                            <span className="text-xs font-bold text-indigo-400">%{selectedCandidate.cv_analyses?.[0]?.match_score || 0}</span>
                             <div className="w-16 h-1.5 bg-[#151c2f] rounded-full overflow-hidden">
-                              <div className="h-full bg-indigo-500" style={{width: `${selectedCandidate.analysis?.score || 0}%`}} />
+                              <div className="h-full bg-indigo-500" style={{width: `${selectedCandidate.cv_analyses?.[0]?.match_score || 0}%`}} />
                             </div>
                           </div>
                         </div>
