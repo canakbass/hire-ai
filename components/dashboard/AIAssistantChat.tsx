@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, User, Sparkles, Loader2, Minimize2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { sendChatMessage } from '@/lib/actions/chat_actions';
 
 interface Message {
@@ -110,12 +111,14 @@ export default function AIAssistantChat({ isOpen, onClose }: AIAssistantChatProp
               {msg.role === 'user' ? <User className="w-3.5 h-3.5" /> : <Bot className="w-3.5 h-3.5" />}
             </div>
             
-            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+            <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm overflow-hidden ${
               msg.role === 'user' 
                 ? 'bg-slate-700 text-white rounded-tr-sm' 
                 : 'bg-[#151c2f] border border-[#1e293b] text-slate-200 rounded-tl-sm shadow-md'
             }`}>
-              {msg.content}
+              <div className="prose prose-sm prose-invert max-w-none leading-relaxed">
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              </div>
             </div>
           </div>
         ))}

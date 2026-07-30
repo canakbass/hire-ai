@@ -34,7 +34,13 @@ export default function DashboardHeader({
     <header className="h-16 border-b border-[#1e293b] bg-[#0b0f19] px-6 flex items-center justify-between shrink-0 z-20">
       {/* Left side */}
       <div className="flex items-center">
-        <button className="text-slate-400 hover:text-white transition-colors">
+        <button 
+          onClick={() => {
+            const aside = document.querySelector('aside');
+            if (aside) aside.classList.toggle('hidden');
+          }}
+          className="text-slate-400 hover:text-white transition-colors p-1"
+        >
           <Menu className="w-5 h-5" />
         </button>
       </div>
@@ -58,7 +64,10 @@ export default function DashboardHeader({
         </div>
 
         {/* Notification Bell */}
-        <button className="relative text-slate-400 hover:text-white transition-colors">
+        <button 
+          onClick={() => alert('Şu anda yeni bir bildiriminiz bulunmuyor.')}
+          className="relative text-slate-400 hover:text-white transition-colors p-1"
+        >
           <Bell className="w-5 h-5" />
         </button>
 

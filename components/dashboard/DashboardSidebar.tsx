@@ -12,7 +12,8 @@ import {
   Star,
   BarChart3,
   Settings,
-  Bot
+  Bot,
+  Briefcase
 } from 'lucide-react';
 import { useState } from 'react';
 import type { Database } from '@/lib/types/database.types';
@@ -41,6 +42,7 @@ export default function DashboardSidebar({
     { label: 'Genel Bakış', href: '/dashboard', icon: Home, badge: null },
     { label: 'Başvurular', href: '/dashboard/applications', icon: Users, badge: null },
     { label: 'Aday Havuzu', href: '/dashboard/candidates', icon: UserSquare2, badge: null },
+    { label: 'Pozisyonlar', href: '/dashboard/jobs', icon: Briefcase, badge: null },
     { label: 'AI Mülakatlar', href: '/dashboard/interviews', icon: Mic, badge: null },
     { label: 'Değerlendirmeler', href: '/dashboard/evaluations', icon: SlidersHorizontal, badge: null },
     { label: 'En İyi Adaylar', href: '/dashboard/shortlists', icon: Star, badge: null },
@@ -110,7 +112,7 @@ export default function DashboardSidebar({
             activeJobs.slice(0, 5).map((pos) => (
               <Link
                 key={pos.id}
-                href={`/dashboard/jobs/${pos.id}`}
+                href={`/dashboard/jobs/${pos.id}/edit`}
                 className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-colors"
               >
                 <span className="tracking-wide truncate pr-2">{pos.title}</span>

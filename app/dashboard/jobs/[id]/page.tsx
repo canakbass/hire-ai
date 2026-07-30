@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Edit, Users, Briefcase, Calendar, MapPin } from 'lucide-react';
+import CloseJobButton from '@/components/dashboard/CloseJobButton';
 
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -50,7 +51,8 @@ export default async function JobDetailPage({ params }: { params: { id: string }
             <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {new Date(job.created_at).toLocaleDateString('tr-TR')}</span>
           </div>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
+          <CloseJobButton jobId={job.id} currentStatus={job.status || 'draft'} />
           <Link
             href={`/dashboard/jobs/${job.id}/edit`}
             className="flex items-center gap-2 bg-[#151c2f] border border-[#1e293b] hover:bg-[#1e293b] text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"

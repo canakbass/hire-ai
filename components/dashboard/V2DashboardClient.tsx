@@ -429,7 +429,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
 
                     {/* AI Mülakat Sonucu */}
                     {activeTab === 'Mülakat Özeti' && (
-                      selectedCandidate.status === 'interviewed' || selectedCandidate.status === 'shortlisted' ? (
+                      selectedCandidate.status === 'interviewed' ? (
                         <div className="bg-[#0b0f19] border border-[#1e293b] rounded-xl p-4">
                           <div className="flex justify-between items-center mb-3">
                             <h5 className="text-[11px] font-bold text-white">AI Voice Mülakat Sonucu</h5>
