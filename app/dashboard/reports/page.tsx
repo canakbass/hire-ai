@@ -27,15 +27,59 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   const [
     { count: jobsCount },
-    { count: appsCount },
+    { data: appsData, count: appsCount },
     { count: interviewsCount },
     { count: shortlistsCount }
   ] = await Promise.all([
     supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).gte('created_at', dateStr),
-    supabase.from('applications').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).gte('created_at', dateStr),
+    supabase.from('applications').select('created_at', { count: 'exact' }).eq('org_id', authData.activeOrg.id).gte('created_at', dateStr),
     supabase.from('interviews').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).gte('created_at', dateStr),
     supabase.from('applications').select('*', { count: 'exact', head: true }).eq('org_id', authData.activeOrg.id).in('status', ['shortlisted', 'hired']).gte('created_at', dateStr)
   ]);
+
+  // Generate chart data based on period
+  let chartData: { label: string, value: number, percentage: number }[] = [];
+  
+  if (isYear) {
+    const months = new Array(12).fill(0);
+    appsData?.forEach(app => {
+      const month = new Date(app.created_at).getMonth();
+      months[month]++;
+    });
+    
+    const maxVal = Math.max(1, ...months);
+    const monthNames = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+    
+    chartData = months.map((val, i) => ({
+      label: monthNames[i],
+      value: val,
+      percentage: (val / maxVal) * 100
+    }));
+  } else {
+    const days = 30;
+    const counts = new Array(days).fill(0);
+    const now = new Date();
+    now.setHours(23, 59, 59, 999);
+    
+    appsData?.forEach(app => {
+      const appDate = new Date(app.created_at);
+      const diffTime = Math.abs(now.getTime() - appDate.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays < days) {
+        counts[days - 1 - diffDays]++; // 0 is oldest, 29 is today
+      }
+    });
+    
+    const maxVal = Math.max(1, ...counts);
+    chartData = counts.map((val, i) => {
+      const d = new Date(now.getTime() - ((days - 1 - i) * 24 * 60 * 60 * 1000));
+      return {
+        label: `${d.getDate()} ${d.toLocaleString('tr-TR', { month: 'short' })}`,
+        value: val,
+        percentage: (val / maxVal) * 100
+      };
+    });
+  }
 
   const kpis = [
     { title: 'Aktif Pozisyonlar', value: jobsCount || 0, icon: Briefcase, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
@@ -103,13 +147,21 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             <BarChart3 className="w-4 h-4 text-indigo-400" />
             Başvuru Trendi
           </h3>
-          <div className="h-64 flex items-end justify-between gap-2 px-2 pb-2">
-            {[25, 35, 20, 50, 70, 40, 80, 65, 90, 75, 100, 85].map((val, i) => (
-              <div key={i} className="w-full h-full flex flex-col justify-end items-center gap-2 group">
-                <div className="w-full bg-[#1e293b] rounded-t-sm relative group-hover:bg-indigo-500/30 transition-colors" style={{ height: `${val}%` }}>
-                  <div className="absolute inset-x-0 bottom-0 bg-indigo-500 rounded-t-sm transition-all" style={{ height: `${val * 0.6}%` }} />
+          <div className="h-64 flex items-end justify-between gap-1 sm:gap-2 px-2 pb-2">
+            {chartData.map((data, i) => (
+              <div key={i} className="flex-1 h-full flex flex-col justify-end items-center gap-2 group relative">
+                
+                {/* Tooltip */}
+                <div className="absolute -top-8 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-10">
+                  {data.value} Başvuru
                 </div>
-                <span className="text-[9px] text-slate-500 uppercase shrink-0">{['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'][i]}</span>
+
+                <div className="w-full max-w-[40px] bg-[#1e293b] rounded-t-sm relative group-hover:bg-indigo-500/30 transition-colors" style={{ height: `${data.percentage}%`, minHeight: data.value > 0 ? '4px' : '0' }}>
+                  <div className="absolute inset-x-0 bottom-0 bg-indigo-500 rounded-t-sm transition-all" style={{ height: `${data.percentage * 0.6}%` }} />
+                </div>
+                <span className={`text-[9px] text-slate-500 uppercase shrink-0 ${isYear ? '' : 'hidden sm:block rotate-45 sm:rotate-0 origin-left mt-2'}`}>
+                  {isYear ? data.label : (i % 3 === 0 || i === chartData.length -1) ? data.label : ''}
+                </span>
               </div>
             ))}
           </div>

@@ -14,6 +14,14 @@ Built natively on the modern Next.js App Router and Supabase, it features a 100%
 - **🏢 Multi-Tenant (B2B Ready):** Secure row-level security (RLS) ensures data isolation across different organizations.
 - **リアル Time Updates:** Real-time Supabase channels push live AI analysis updates to the recruiter dashboard without page reloads.
 
+## 📸 Screenshots
+
+![Dashboard Overview](public/screenshots/Ekran%20G%C3%B6r%C3%BCnt%C3%BCs%C3%BC_20260730_183928.png)
+![Job Creation](public/screenshots/Ekran%20G%C3%B6r%C3%BCnt%C3%BCs%C3%BC_20260730_184027.png)
+![Candidate Analysis](public/screenshots/Ekran%20G%C3%B6r%C3%BCnt%C3%BCs%C3%BC_20260730_184058.png)
+![Application Details](public/screenshots/Ekran%20G%C3%B6r%C3%BCnt%C3%BCs%C3%BC_20260730_184134.png)
+![Reports & Trends](public/screenshots/Ekran%20G%C3%B6r%C3%BCnt%C3%BCs%C3%BC_20260730_184156.png)
+
 ---
 
 ## 🏗️ Architecture
