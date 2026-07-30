@@ -1,9 +1,29 @@
 'use server';
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, FunctionDeclaration, SchemaType } from '@google/generative-ai';
+import { getCurrentUserAndOrg } from '@/lib/actions/auth_org_helpers';
+import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 
 // Initialize the Google Generative AI client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+const createJobDeclaration: FunctionDeclaration = {
+  name: 'create_job_posting',
+  description: 'Kullanıcının isteği üzerine veritabanında yeni bir iş ilanı (pozisyon) oluşturur. Sadece kullanıcı ilan oluşturmanı istediğinde ve gerekli bilgileri (başlık, departman vb.) verdiğinde kullan.',
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      title: { type: SchemaType.STRING, description: 'Pozisyon başlığı (ör. Kıdemli Frontend Geliştirici)' },
+      department: { type: SchemaType.STRING, description: 'Departman (ör. Mühendislik, Pazarlama)' },
+      employment_type: { type: SchemaType.STRING, description: 'Çalışma modeli (Remote, Ofis, Hibrit)' },
+      experience_level: { type: SchemaType.STRING, description: 'Deneyim seviyesi (Junior, Mid, Senior vb.)' },
+      description: { type: SchemaType.STRING, description: 'İşin tanımı ve genel görevleri (Markdown veya HTML desteklenir)' },
+      requirements: { type: SchemaType.STRING, description: 'Adayda aranan özellikler, yetenekler (Markdown veya HTML desteklenir)' }
+    },
+    required: ['title']
+  }
+};
 
 export async function sendChatMessage(messages: { role: 'user' | 'assistant' | 'system', content: string }[]) {
   try {
@@ -11,10 +31,12 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
       return { error: 'Gemini API anahtarı eksik. Lütfen .env.local dosyasında GEMINI_API_KEY tanımlayın.' };
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-flash-latest',
+      tools: [{ functionDeclarations: [createJobDeclaration] }]
+    });
 
-    // Format history for Gemini
-    const systemPrompt = messages.find(m => m.role === 'system')?.content || 'Sen yetenekli bir İK Asistanısın (HireAI). Aday değerlendirme ve işe alım süreçlerinde kullanıcıya yardımcı olursun. ÖNEMLİ: Sen doğrudan veritabanına kayıt EKLEYEMEZSİN veya pozisyon OLUŞTURAMAZSIN. Kullanıcı pozisyon oluşturmak veya ilan açmak isterse ona "Pozisyon Yönetimi" (Jobs) ekranına giderek "Yeni Ekle" butonuna basması gerektiğini söyle ve kendisinin yapması gerektiğini nazikçe belirt. Onlara sadece taslak oluşturmalarında yardımcı olabilirsin (örneğin ilan metnini markdown olarak yazıp vermek). Markdown olarak yazdığın metinleri çok iyi biçimlendir.';
+    const systemPrompt = messages.find(m => m.role === 'system')?.content || 'Sen yetenekli bir İK Asistanısın (HireAI). Aday değerlendirme ve işe alım süreçlerinde kullanıcıya yardımcı olursun. KULLANICI İLAN OLUŞTURMAK İSTERSE, "create_job_posting" fonksiyonunu çağırarak doğrudan sisteme ekleyebilirsin. Ancak eklemeden önce emin olmak için pozisyon unvanı, departman vb. bilgileri kullanıcıdan aldığından emin ol.';
     
     // Create chat session
     const chat = model.startChat({
@@ -25,7 +47,7 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
         },
         {
           role: 'model',
-          parts: [{ text: 'Anladım. İK Asistanı rolünü üstleniyorum.' }]
+          parts: [{ text: 'Anladım. İK Asistanı rolünü üstleniyorum ve gerektiğinde ilan oluşturma yetkisine sahibim.' }]
         },
         ...messages.filter(m => m.role !== 'system').slice(0, -1).map(m => ({
           role: m.role === 'user' ? 'user' : 'model',
@@ -41,6 +63,52 @@ export async function sendChatMessage(messages: { role: 'user' | 'assistant' | '
 
     const result = await chat.sendMessage(lastMessage.content);
     const response = await result.response;
+    const functionCalls = response.functionCalls();
+
+    if (functionCalls && functionCalls.length > 0) {
+      const call = functionCalls[0];
+      if (call.name === 'create_job_posting') {
+        const authData = await getCurrentUserAndOrg();
+        if (!authData?.activeOrg) {
+          return { error: 'Aktif organizasyon bulunamadı. Lütfen oturumunuzu kontrol edin.' };
+        }
+
+        const supabase = await createClient();
+        const args = call.args as any;
+        
+        const { error } = await supabase.from('jobs').insert({
+          org_id: authData.activeOrg.id,
+          title: args.title,
+          department: args.department || 'Belirtilmedi',
+          employment_type: args.employment_type || 'Belirtilmedi',
+          seniority: args.experience_level || 'Belirtilmedi',
+          description: args.description 
+            ? `${args.description}\n\n${args.requirements ? '### Gereksinimler\n' + args.requirements : ''}`
+            : 'Detaylar daha sonra eklenecek.',
+          status: 'draft',
+          created_by: authData.user?.id
+        });
+
+        if (error) throw error;
+
+        // Optionally revalidate the jobs page so the sidebar updates
+        revalidatePath('/dashboard');
+        revalidatePath('/dashboard/jobs');
+
+        const finalResult = await chat.sendMessage([{
+          functionResponse: {
+            name: 'create_job_posting',
+            response: { 
+              success: true, 
+              message: 'İlan başarıyla veritabanına Taslak (draft) olarak kaydedildi.' 
+            }
+          }
+        }]);
+        
+        return { text: finalResult.response.text() };
+      }
+    }
+
     return { text: response.text() };
 
   } catch (error: any) {
