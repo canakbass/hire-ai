@@ -68,11 +68,7 @@ export default async function CandidatesPage() {
                     {cand.phone && <p className="text-xs text-slate-500 mt-1">{cand.phone}</p>}
                   </td>
                   <td className="px-6 py-4">
-                    {cand.resume_url ? (
-                      <a href={cand.resume_url} target="_blank" rel="noreferrer" className="text-xs text-indigo-400 hover:text-indigo-300 underline">Görüntüle</a>
-                    ) : (
-                      <span className="text-xs text-slate-500">Yok</span>
-                    )}
+                    <span className="text-xs text-slate-500">Uygulama İçinden İnceleyin</span>
                   </td>
                   <td className="px-6 py-4 text-right text-slate-500 text-xs">
                     {new Date(cand.created_at).toLocaleDateString('tr-TR')}
