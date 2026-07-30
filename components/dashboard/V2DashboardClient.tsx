@@ -30,6 +30,9 @@ interface V2DashboardClientProps {
 
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import type { Database } from '@/lib/types/database.types';
+
+type AppStatus = Database['public']['Enums']['app_status'];
 
 export default function V2DashboardClient({ stats, recentApps }: V2DashboardClientProps) {
   const [selectedCandidate, setSelectedCandidate] = useState(recentApps[0] || null);
@@ -37,7 +40,7 @@ export default function V2DashboardClient({ stats, recentApps }: V2DashboardClie
   const [isUpdating, setIsUpdating] = useState(false);
   const router = useRouter();
 
-  const handleUpdateStatus = async (status: string) => {
+  const handleUpdateStatus = async (status: AppStatus) => {
     if (!selectedCandidate) return;
     setIsUpdating(true);
     const supabase = createClient();
